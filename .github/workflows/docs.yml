@@ -1,0 +1,56 @@
+name: Docs
+
+# Builds the MkDocs site and, on pushes to main, deploys it to GitHub Pages.
+# (Previously the site was published by the retired community mirror; docs now
+# ship directly from this repo. Requires Pages enabled: Settings → Pages →
+# Source: GitHub Actions.)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/manual/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/manual/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+
+permissions:
+  contents: read
+
+# Allow one concurrent Pages deployment; don't cancel an in-progress deploy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install "mkdocs-material>=9.5,<10"
+      - run: mkdocs build --strict --site-dir _site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    # Deploy to GitHub Pages only on pushes to main (PRs just build-check above).
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

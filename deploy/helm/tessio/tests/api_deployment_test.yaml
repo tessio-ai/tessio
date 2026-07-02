@@ -1,0 +1,22 @@
+suite: api deployment
+templates:
+  - templates/api-deployment.yaml
+tests:
+  - it: waits for migrate and serves /health
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: wait-for-migrate
+      - equal:
+          path: "spec.template.spec.containers[0].readinessProbe.httpGet.path"
+          value: /health
+      - equal:
+          path: "spec.template.spec.containers[0].ports[0].containerPort"
+          value: 3000
+  - it: mounts the attachment storage PVC
+    asserts:
+      - equal:
+          path: "spec.template.spec.volumes[0].persistentVolumeClaim.claimName"
+          value: RELEASE-NAME-tessio-storage

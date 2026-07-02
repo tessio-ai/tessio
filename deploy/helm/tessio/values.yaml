@@ -1,0 +1,110 @@
+# Default values for tessio.
+nameOverride: ""
+fullnameOverride: ""
+commonLabels: {}
+podAnnotations: {}
+
+image:
+  registry: ghcr.io
+  repository: tessio-ai
+  tag: ""            # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# App secrets. Leave blank to auto-generate (preserved across upgrades via lookup).
+secrets:
+  existingSecret: ""   # if set, reuse this Secret instead of managing one
+  sessionSecret: ""    # cookie signing; generated if empty
+  secretKey: ""        # base64 32-byte key for provider-key encryption; generated if empty
+  runnerToken: ""      # worker→runner shared token that locks the script runner's /run; generated if empty
+
+# First-admin seed (optional; runs in the migrate Job when both email+password set).
+admin:
+  email: ""
+  password: ""
+  name: ""
+
+config:
+  siteAddress: ":80"   # Caddy serves HTTP in-cluster; TLS terminates at the Ingress
+
+# Attachment blob storage (api).
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+# Bundled pgvector Postgres (disable to use externalDatabase).
+postgresql:
+  enabled: true
+  image: pgvector/pgvector:pg16
+  auth:
+    username: tessio
+    database: tessio
+    password: ""       # generated if empty (preserved via lookup)
+  persistence:
+    size: 10Gi
+    storageClass: ""
+  resources: {}
+externalDatabase:
+  url: ""              # postgres://user:pass@host:5432/db  (requires pgvector)
+
+# Bundled Redis (disable to use externalRedis).
+redis:
+  enabled: true
+  image: redis:7
+  persistence:
+    enabled: false
+    size: 5Gi
+    storageClass: ""
+  resources: {}
+externalRedis:
+  url: ""              # redis://host:6379
+
+ingress:
+  enabled: true
+  className: ""
+  host: tessio.example.com
+  annotations: {}
+  tls: []              # [{secretName: tessio-tls, hosts: [tessio.example.com]}]
+
+# Per-component knobs. resources default empty; set in production.
+api:
+  replicaCount: 1
+  resources: {}
+  podSecurityContext: { runAsNonRoot: true, runAsUser: 1000, fsGroup: 1000 }
+  securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: false, capabilities: { drop: [ALL] } }
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+worker:
+  replicaCount: 1
+  resources: {}
+  podSecurityContext: { runAsNonRoot: true, runAsUser: 1000, fsGroup: 1000 }
+  securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+runner:
+  replicaCount: 1
+  resources: {}
+  podSecurityContext: { runAsNonRoot: true, runAsUser: 1000, fsGroup: 1000 }
+  securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+web:
+  replicaCount: 1
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+migrate:
+  resources: {}
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600

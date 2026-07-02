@@ -1,0 +1,62 @@
+name: Feature request
+description: Suggest an idea or enhancement for Tessio
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Tessio! 🚀
+
+        Please search [existing issues](https://github.com/tessio/tessio/issues) and
+        [Discussions](https://github.com/tessio/tessio/discussions) first — your idea may already be under way.
+
+  - type: checkboxes
+    id: no-duplicate
+    attributes:
+      label: No duplicate
+      options:
+        - label: I have searched existing issues and discussions and this has not already been proposed.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem are you trying to solve? What is the use case or pain point?
+      placeholder: I'm always frustrated when [...] / As an ITSM admin I need to [...]
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the feature or change you would like to see, and how it would behave.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions, workarounds, or existing features you've tried.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Mockups, links to similar features in other tools, or anything else that helps.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      description: Optional — would you be willing to help build this?
+      options:
+        - label: I would be willing to contribute this feature (code, docs, or testing) via a pull request.
+          required: false

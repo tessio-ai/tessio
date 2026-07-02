@@ -1,0 +1,11 @@
+{
+  // Static-assets-only Worker for the community landing site. No server code:
+  // `wrangler deploy` uploads ./dist (the Vite build output) to Cloudflare.
+  // The Cloudflare build must run with Root directory = apps/landing so wrangler
+  // resolves this config and doesn't try to detect an app in the monorepo root.
+  "name": "tessio-landing",
+  "compatibility_date": "2026-06-13",
+  "assets": {
+    "directory": "./dist"
+  }
+}

@@ -1,0 +1,2 @@
+ALTER TABLE "portal_settings" ADD COLUMN "hero" jsonb DEFAULT '{"preset":"spotlight","pills":[],"showSearch":true}'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "portal_settings" ADD COLUMN "catalog" jsonb DEFAULT '{"sectionStyle":"band","cardStyle":"comfortable","columns":"auto"}'::jsonb NOT NULL;

@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+*.log
+.env
+.env.local
+.env.*.local
+.env.smoke
+.env.aio-smoke
+.DS_Store
+.superpowers/
+.storage/
+/site
+/agent/target/
+
+# Local Claude Code agent config / project skills (not shipped)
+.claude/
+.impeccable/

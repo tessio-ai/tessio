@@ -1,0 +1,22 @@
+{
+  "name": "@tessio/entitlements",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@tessio/db": "workspace:*",
+    "fastify": "^5.2.0",
+    "vitest": "^3.0.0",
+    "typescript": "^5.7.0"
+  },
+  "license": "AGPL-3.0-only"
+}

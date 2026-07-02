@@ -1,0 +1,76 @@
+site_name: Tessio
+site_description: Self-hosted ITSM platform — install & operations docs.
+site_url: https://tessio-ai.github.io/tessio/
+repo_url: https://github.com/tessio-ai/tessio
+repo_name: tessio-ai/tessio
+docs_dir: docs/manual
+site_dir: site
+
+theme:
+  name: material
+  logo: assets/tessio-mark.svg
+  favicon: assets/tessio-mark.svg
+  font:
+    text: Inter
+    code: JetBrains Mono
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.instant
+    - search.suggest
+    - content.code.copy
+
+copyright: "© 2026 Tessio. Self-hosted, on your terms."
+
+extra_css:
+  - stylesheets/tessio.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+validation:
+  nav:
+    omitted_files: ignore
+  links:
+    absolute_links: ignore
+    unrecognized_links: warn
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Install:
+      - Docker Compose: install/compose.md
+      - Single container: install/all-in-one.md
+      - Kubernetes (Helm): install/kubernetes.md
+  - Configuration: configuration.md
+  - AI & privacy: ai-privacy.md
+  - Operations:
+      - Upgrading: operations/upgrading.md
+      - Backup & restore: operations/backup-restore.md
+      - TLS / HTTPS: operations/tls.md
+      - Troubleshooting: operations/troubleshooting.md
+      - Email: operations/email.md

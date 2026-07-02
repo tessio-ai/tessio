@@ -1,0 +1,119 @@
+name: Bug report
+description: Report a reproducible bug or unexpected behavior in Tessio
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report! 🐛
+
+        Please search [existing issues](https://github.com/tessio/tessio/issues) first to avoid duplicates.
+
+        **Do not report security vulnerabilities here.** See our
+        [Security Policy](https://github.com/tessio/tessio/blob/main/SECURITY.md) for private disclosure.
+
+  - type: checkboxes
+    id: not-security
+    attributes:
+      label: This is not a security report
+      description: Tessio handles sensitive IT data. Security issues must be disclosed privately.
+      options:
+        - label: I confirm this is **not** a security vulnerability. Security issues go to [SECURITY.md](https://github.com/tessio/tessio/blob/main/SECURITY.md), not the public issue tracker.
+          required: true
+
+  - type: checkboxes
+    id: no-duplicate
+    attributes:
+      label: No duplicate
+      options:
+        - label: I have searched existing issues and this has not been reported.
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: When I do X, Y happens instead of Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Provide a minimal, ordered set of steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Tessio version
+      description: The release tag, image tag, or commit SHA you are running.
+      placeholder: "e.g. v1.4.2 or git SHA af3226f"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment method
+      description: How are you running Tessio?
+      options:
+        - Docker Compose
+        - All-in-one container
+        - Kubernetes (Helm)
+        - Dev (pnpm dev / local source)
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Browser / OS
+      description: Browser and version (for UI bugs) and host OS / architecture.
+      placeholder: "e.g. Chrome 126 on macOS 14 (arm64), or Firefox 127 on Ubuntu 24.04"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs and output
+      description: |
+        Paste API/worker/runner logs, browser console errors, or stack traces.
+        **Redact any secrets, tokens, or personal data before posting.**
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, configuration snippets, or anything else that helps.
+    validations:
+      required: false

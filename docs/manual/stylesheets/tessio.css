@@ -1,0 +1,363 @@
+/* ============================================================
+   Tessio docs theme
+   Matches the product landing page: Anton condensed display,
+   ink/paper surfaces, indigo links, coral accent, pill shapes.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+:root {
+  --tessio-ink: #0e0e11;
+  --tessio-ink-2: #16161b;
+  --tessio-paper: #ffffff;
+  --tessio-paper-2: #f6f5f2;
+  --tessio-line: #e7e6e2;
+  --tessio-line-dk: #26262e;
+  --tessio-indigo: #4f46e5;
+  --tessio-indigo-2: #818cf8;
+  --tessio-violet: #8b5cf6;
+  --tessio-cyan: #22d3ee;
+  --tessio-coral: #ff5a3c;
+  --tessio-disp: "Anton", "Inter", sans-serif;
+}
+
+/* ---------- palette: light ---------- */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--tessio-ink);
+  --md-primary-fg-color--light: #2a2a32;
+  --md-primary-fg-color--dark: #0a0a0d;
+  --md-primary-bg-color: #f7f7f5;
+  --md-primary-bg-color--light: #a8a8b3;
+  --md-accent-fg-color: var(--tessio-coral);
+  --md-accent-fg-color--transparent: rgba(255, 90, 60, .08);
+  --md-default-fg-color: #14141a;
+  --md-default-fg-color--light: #5d5d68;
+  --md-default-fg-color--lighter: #9a9aa4;
+  --md-default-fg-color--lightest: var(--tessio-paper-2);
+  --md-typeset-a-color: var(--tessio-indigo);
+  --md-code-bg-color: var(--tessio-paper-2);
+  --md-code-fg-color: #14141a;
+  --md-footer-bg-color: var(--tessio-ink);
+  --md-footer-bg-color--dark: #0a0a0d;
+}
+
+/* ---------- palette: dark ---------- */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: var(--tessio-ink);
+  --md-primary-fg-color--light: #2a2a32;
+  --md-primary-fg-color--dark: #0a0a0d;
+  --md-primary-bg-color: #f7f7f5;
+  --md-primary-bg-color--light: #a8a8b3;
+  --md-accent-fg-color: #ff7a5e;
+  --md-accent-fg-color--transparent: rgba(255, 122, 94, .1);
+  --md-default-bg-color: var(--tessio-ink);
+  --md-default-fg-color: #f0f0f3;
+  --md-default-fg-color--light: #b6b6c0;
+  --md-default-fg-color--lighter: #8a8a95;
+  --md-default-fg-color--lightest: var(--tessio-ink-2);
+  --md-typeset-a-color: var(--tessio-indigo-2);
+  --md-code-bg-color: var(--tessio-ink-2);
+  --md-code-fg-color: #e7e7ec;
+  --md-footer-bg-color: #0a0a0d;
+  --md-footer-bg-color--dark: #060608;
+  --md-typeset-color: #e2e2e8;
+}
+
+/* ---------- header: the landing's floating white pill nav ---------- */
+.md-header {
+  background: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
+  box-shadow: none;
+  padding: 12px 12px 6px;
+}
+
+.md-header--shadow {
+  box-shadow: none;
+}
+
+.md-header__inner {
+  background: var(--tessio-paper);
+  color: #14141a;
+  border: 1px solid var(--tessio-line);
+  border-radius: 999px;
+  box-shadow: 0 8px 30px -14px rgba(0, 0, 0, .35);
+  padding: 4px 6px 4px 10px;
+}
+
+[data-md-color-scheme="slate"] .md-header__inner {
+  border-color: transparent;
+  box-shadow: 0 8px 30px -8px rgba(0, 0, 0, .55);
+}
+
+.md-header__topic:first-child {
+  font-family: var(--tessio-disp);
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 1rem;
+  letter-spacing: .02em;
+}
+
+.md-header__button {
+  color: #14141a;
+}
+
+.md-header__button:hover {
+  color: var(--tessio-coral);
+  opacity: 1;
+}
+
+.md-header__source,
+.md-header__source .md-source {
+  color: #5d5d68;
+}
+
+.md-header__source .md-source:hover {
+  color: #14141a;
+  opacity: 1;
+}
+
+/* the layout must account for the taller floating header */
+.md-sidebar {
+  top: 4rem;
+}
+
+.md-typeset :target {
+  --md-scroll-margin: 4.6rem;
+}
+
+/* pill search, like the landing nav */
+.md-search__form {
+  border-radius: 999px;
+}
+
+@media screen and (min-width: 60em) {
+  .md-search__form {
+    background: var(--tessio-paper-2);
+  }
+
+  .md-search__form:hover {
+    background: #efede9;
+  }
+
+  .md-search__input {
+    color: #14141a;
+  }
+
+  .md-search__input::placeholder,
+  .md-search__input + .md-search__icon {
+    color: #6b6b76;
+  }
+
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+    border-radius: 14px 14px 0 0;
+    background: var(--tessio-paper);
+  }
+}
+
+.md-search__output {
+  border-radius: 0 0 14px 14px;
+}
+
+/* ---------- display type ---------- */
+.md-typeset h1,
+.md-typeset h2 {
+  font-family: var(--tessio-disp);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: .01em;
+  color: var(--md-default-fg-color);
+}
+
+.md-typeset h1 {
+  font-size: 2.3rem;
+  line-height: .95;
+  margin-bottom: 1.2rem;
+  text-wrap: balance;
+}
+
+.md-typeset h2 {
+  font-size: 1.3rem;
+  line-height: 1;
+  margin: 2em 0 .8em;
+}
+
+.md-typeset h3 {
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.md-typeset {
+  font-size: .8rem;
+  line-height: 1.6;
+}
+
+/* ---------- links ---------- */
+.md-typeset a {
+  font-weight: 500;
+}
+
+/* ---------- code ---------- */
+.md-typeset pre > code {
+  border-radius: 14px;
+  border: 1px solid var(--tessio-line);
+  padding: .9em 1.1em;
+}
+
+[data-md-color-scheme="slate"] .md-typeset pre > code {
+  border-color: var(--tessio-line-dk);
+}
+
+.md-typeset code {
+  border-radius: 6px;
+}
+
+/* ---------- tables ---------- */
+.md-typeset table:not([class]) {
+  border: 1px solid var(--tessio-line);
+  border-radius: 14px;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) {
+  border-color: var(--tessio-line-dk);
+}
+
+.md-typeset table:not([class]) th {
+  font-size: .6rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--light);
+  background: var(--md-code-bg-color);
+}
+
+/* ---------- admonitions: full hairline, rounded, tile-label titles ---------- */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 14px;
+  border-width: 1px;
+  box-shadow: none;
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+  border-radius: 0;
+  font-family: var(--tessio-disp);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* ---------- buttons ---------- */
+.md-typeset .md-button {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* ---------- sidebar nav ---------- */
+@media screen and (min-width: 76.25em) {
+  .md-nav--primary > .md-nav__title {
+    display: none;
+  }
+}
+
+.md-nav__item--section > .md-nav__link {
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--md-default-fg-color--lighter);
+}
+
+.md-nav__link {
+  font-weight: 500;
+}
+
+/* pill-shaped nav links, like the landing nav */
+@media screen and (min-width: 76.25em) {
+  .md-nav__link {
+    border-radius: 999px;
+    padding: 4px 10px;
+    margin-top: .25em;
+  }
+
+  .md-nav__item--section > .md-nav__link {
+    padding-bottom: 0;
+  }
+
+  .md-nav__link:hover {
+    background: var(--md-code-bg-color);
+  }
+
+  .md-nav__link--active,
+  .md-nav__link--active:hover {
+    background: rgba(79, 70, 229, .09);
+  }
+
+  [data-md-color-scheme="slate"] .md-nav__link--active,
+  [data-md-color-scheme="slate"] .md-nav__link--active:hover {
+    background: rgba(129, 140, 248, .14);
+  }
+}
+
+/* ---------- footer ---------- */
+.md-footer-meta {
+  background-color: var(--md-footer-bg-color--dark);
+}
+
+/* prev / next as landing pill buttons */
+.md-footer__inner {
+  padding-top: 1.1rem;
+  padding-bottom: 1.1rem;
+}
+
+.md-footer__link {
+  background: var(--tessio-ink-2);
+  border: 1px solid var(--tessio-line-dk);
+  border-radius: 999px;
+  padding: .35rem 1rem .35rem .6rem;
+  margin-top: 0;
+  margin-bottom: 0;
+  align-items: center;
+}
+
+.md-footer__link--next {
+  padding: .35rem .6rem .35rem 1rem;
+}
+
+.md-footer__link:hover {
+  background: #1d1d24;
+  opacity: 1;
+}
+
+.md-footer__title {
+  margin: 0;
+  font-size: .7rem;
+}
+
+/* back-to-top pill, like .btn-dark */
+.md-top {
+  background: var(--tessio-ink);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 8px 30px -10px rgba(0, 0, 0, .5);
+}
+
+.md-top:hover,
+.md-top:focus {
+  background: #2a2a32;
+  color: #fff;
+}
+
+/* ---------- details ---------- */
+::selection {
+  background: rgba(255, 90, 60, .3);
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset * {
+    transition: none !important;
+  }
+}

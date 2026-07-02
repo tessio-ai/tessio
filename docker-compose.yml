@@ -1,0 +1,43 @@
+# Dev datastores only (Postgres + Redis + a test mail server) for `pnpm dev`.
+# Distinct project name so it never collides with the app stack in compose.yaml
+# (which is `name: tessio`) — a shared name would let one stack's teardown remove
+# the other's containers/volumes.
+name: tessio-dev
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: tessio
+      POSTGRES_PASSWORD: tessio
+      POSTGRES_DB: tessio
+    ports:
+      - '5432:5432'
+    volumes:
+      - tessio_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tessio']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7
+    ports:
+      - '6379:6379'
+
+  # Local test mail server for exercising the email features end-to-end.
+  # Speaks SMTP (3025) + IMAP (3143) so outbound notifications and the inbound
+  # poller can be tested without a real provider. auth.disabled makes any
+  # user/password work and auto-creates mailboxes on first login. Inspect or
+  # purge captured mail via the REST API / web on :8080.
+  greenmail:
+    image: greenmail/standalone:2.1.0
+    ports:
+      - '3025:3025' # SMTP
+      - '3143:3143' # IMAP
+      - '8080:8080' # GreenMail REST API
+    environment:
+      GREENMAIL_OPTS: '-Dgreenmail.setup.test.smtp -Dgreenmail.setup.test.imap -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose'
+
+volumes:
+  tessio_pg:

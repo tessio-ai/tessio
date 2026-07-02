@@ -1,0 +1,16 @@
+Tessio {{ .Chart.AppVersion }} installed as {{ .Release.Name }}.
+
+{{- if .Values.ingress.enabled }}
+Open: http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.host }}
+{{- else }}
+No Ingress is enabled. Port-forward the web service to try it:
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "tessio.fullname" . }}-web 8080:80
+  open http://localhost:8080
+{{- end }}
+
+Migrations run as Job {{ include "tessio.migrateJobName" . }} (api/worker wait for it).
+{{- if not (and .Values.admin.email .Values.admin.password) }}
+
+No admin was seeded (admin.email/admin.password not set). Set them and run
+`helm upgrade` to seed the first admin + org defaults.
+{{- end }}

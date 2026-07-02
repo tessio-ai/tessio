@@ -1,0 +1,3 @@
+#!/command/with-contenv sh
+cd /app/worker
+exec s6-setuidgid node node dist/index.js

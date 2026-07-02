@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "tessio.migrateJobName" . }}
+  labels:
+    {{- include "tessio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+spec:
+  backoffLimit: {{ .Values.migrate.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.migrate.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "tessio.componentSelectorLabels" (dict "ctx" . "component" "migrate") | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "tessio.serviceAccountName" . }}
+      securityContext: { runAsNonRoot: true, runAsUser: 1000 }
+      {{- if .Values.postgresql.enabled }}
+      initContainers:
+        - name: wait-for-db
+          image: {{ .Values.postgresql.image | quote }}
+          command: ["sh", "-c", "until pg_isready -h {{ include "tessio.postgres.fullname" . }} -U {{ .Values.postgresql.auth.username }}; do echo waiting for db; sleep 2; done"]
+      {{- end }}
+      containers:
+        - name: migrate
+          image: {{ include "tessio.image" (dict "ctx" . "component" "migrate") | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- if .Values.postgresql.enabled }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tessio.postgres.fullname" . }}
+                  key: POSTGRES_PASSWORD
+            {{- end }}
+            - name: DATABASE_URL
+              value: {{ include "tessio.databaseUrl" . | quote }}
+            - name: TESSIO_ADMIN_EMAIL
+              valueFrom:
+                secretKeyRef: { name: {{ include "tessio.secretName" . }}, key: TESSIO_ADMIN_EMAIL, optional: true }
+            - name: TESSIO_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: {{ include "tessio.secretName" . }}, key: TESSIO_ADMIN_PASSWORD, optional: true }
+            - name: TESSIO_ADMIN_NAME
+              valueFrom:
+                secretKeyRef: { name: {{ include "tessio.secretName" . }}, key: TESSIO_ADMIN_NAME, optional: true }
+          resources: {{- toYaml .Values.migrate.resources | nindent 12 }}

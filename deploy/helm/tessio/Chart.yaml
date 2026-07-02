@@ -1,0 +1,12 @@
+apiVersion: v2
+name: tessio
+description: Self-hosted ITSM platform (ticketing, CMDB, KB, forms, dashboards, automation).
+type: application
+version: 0.1.0
+appVersion: "latest"
+home: https://github.com/tessio-ai/tessio
+sources:
+  - https://github.com/tessio-ai/tessio
+keywords: [itsm, ticketing, helpdesk, cmdb, self-hosted]
+maintainers:
+  - name: tessio-ai

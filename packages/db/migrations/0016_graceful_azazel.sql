@@ -1,0 +1,1 @@
+ALTER TABLE "ai_settings" ALTER COLUMN "features" SET DEFAULT '{"summary":false,"draft":false,"triage":false,"similar":false,"ask":false}'::jsonb;

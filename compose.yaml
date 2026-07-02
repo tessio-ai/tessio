@@ -1,0 +1,151 @@
+name: tessio
+
+# Images are published to ghcr.io/tessio-ai/tessio-* by the release pipeline
+# (.github/workflows/release-images.yml): versioned on tag, :edge on main. Pin a
+# release with TESSIO_VERSION=X.Y.Z in .env (default: latest). To build locally
+# instead, run `docker compose up -d --build` (the build: blocks on each service).
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tessio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tessio}
+      POSTGRES_DB: tessio
+    volumes:
+      - tessio_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tessio']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    # Require a password (set REDIS_PASSWORD in .env, and include it in REDIS_URL).
+    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:-}']
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    image: ghcr.io/tessio-ai/tessio-migrate:${TESSIO_VERSION:-latest}
+    build:
+      context: .
+      target: migrate
+    restart: 'no'
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      TESSIO_ADMIN_EMAIL: ${TESSIO_ADMIN_EMAIL:-}
+      TESSIO_ADMIN_PASSWORD: ${TESSIO_ADMIN_PASSWORD:-}
+      TESSIO_ADMIN_NAME: ${TESSIO_ADMIN_NAME:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    image: ghcr.io/tessio-ai/tessio-api:${TESSIO_VERSION:-latest}
+    build:
+      context: .
+      target: api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      TESSIO_SECRET_KEY: ${TESSIO_SECRET_KEY}
+      PORT: '3000'
+      HOST: 0.0.0.0
+      TESSIO_STORAGE_DIR: /data/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    volumes:
+      - tessio_storage:/data/storage
+
+  worker:
+    image: ghcr.io/tessio-ai/tessio-worker:${TESSIO_VERSION:-latest}
+    build:
+      context: .
+      target: worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      TESSIO_SECRET_KEY: ${TESSIO_SECRET_KEY}
+      RUNNER_URL: http://runner:3100
+      RUNNER_TOKEN: ${RUNNER_TOKEN:-}
+      EMAIL_POLL_INTERVAL_MS: ${EMAIL_POLL_INTERVAL_MS:-60000}
+      SCHEDULE_TICK_INTERVAL_MS: ${SCHEDULE_TICK_INTERVAL_MS:-60000}
+      SLA_TICK_INTERVAL_MS: ${SLA_TICK_INTERVAL_MS:-60000}
+      EMAIL_ATTACHMENT_MAX_BYTES: ${EMAIL_ATTACHMENT_MAX_BYTES:-10485760}
+      TESSIO_SITE_URL: ${TESSIO_SITE_URL:-http://localhost}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  runner:
+    image: ghcr.io/tessio-ai/tessio-runner:${TESSIO_VERSION:-latest}
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      RUNNER_PORT: '3100'
+      HOST: 0.0.0.0
+      # Shared secret the worker presents to authorize /run (defense in depth on the
+      # internal network). When unset, /run stays open — set RUNNER_TOKEN to lock it.
+      RUNNER_TOKEN: ${RUNNER_TOKEN:-}
+
+  web:
+    image: ghcr.io/tessio-ai/tessio-web:${TESSIO_VERSION:-latest}
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    environment:
+      TESSIO_SITE_ADDRESS: ${TESSIO_SITE_ADDRESS:-:80}
+    ports:
+      - '${TESSIO_HTTP_PORT:-80}:80'
+      - '${TESSIO_HTTPS_PORT:-443}:443'
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  tessio_pg:
+  tessio_storage:
+  caddy_data:
+  caddy_config:

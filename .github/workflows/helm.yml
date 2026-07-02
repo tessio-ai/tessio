@@ -1,0 +1,65 @@
+name: Helm chart
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'deploy/helm/**'
+      - '.github/workflows/helm.yml'
+  pull_request:
+    paths:
+      - 'deploy/helm/**'
+      - '.github/workflows/helm.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+      - name: Lint
+        run: helm lint deploy/helm/tessio
+      - name: Template (default) + kubeconform
+        run: |
+          curl -sSLo /tmp/kc.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          tar -xzf /tmp/kc.tar.gz -C /tmp
+          helm template t deploy/helm/tessio | /tmp/kubeconform -strict -summary -skip CustomResourceDefinition
+      - name: Template (external datastores + ingress tls) + kubeconform
+        run: |
+          helm template t deploy/helm/tessio \
+            --set postgresql.enabled=false --set externalDatabase.url=postgres://u:p@db:5432/d \
+            --set redis.enabled=false --set externalRedis.url=redis://r:6379 \
+            --set 'ingress.tls[0].secretName=tls' --set 'ingress.tls[0].hosts[0]=tessio.example.com' \
+            | /tmp/kubeconform -strict -summary -skip CustomResourceDefinition
+      - name: Unit tests
+        # Use the pinned helm-unittest image (bundles a compatible helm + plugin);
+        # installing the latest plugin against setup-helm's Helm fails on the
+        # plugin.yaml "platformHooks" field. The chmod lets the image's non-root
+        # user create its __snapshot__ dir in the runner-owned checkout.
+        run: |
+          chmod -R 0777 deploy/helm/tessio/tests
+          docker run --rm -v "$PWD":/apps helmunittest/helm-unittest:3.21.0-1.0.3 deploy/helm/tessio
+
+  publish:
+    needs: validate
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+      - name: Package with the release version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          helm package deploy/helm/tessio --version "$VERSION" --app-version "$VERSION"
+      - name: Push to GHCR (OCI)
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          helm push tessio-*.tgz oci://ghcr.io/${{ github.repository_owner }}/charts

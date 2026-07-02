@@ -1,0 +1,63 @@
+# CLA Assistant Lite — Contributor License Agreement signature workflow.
+#
+# Tessio is open core: code outside `ee/` is AGPL-3.0-only and code in `ee/`
+# is commercial. Because we dual-license, we require contributors to sign a CLA
+# so that contributions can be redistributed under both licenses. See LICENSING.md.
+#
+# Requirements to enable this workflow:
+#   1. A repo secret `PERSONAL_ACCESS_TOKEN` (a fine-grained or classic PAT with
+#      `repo` scope) used to write the signatures file. The default GITHUB_TOKEN
+#      is not used here because pull_request_target on forks needs a token that
+#      can commit to the signatures storage. Restrict this PAT carefully.
+#   2. A CLA document committed in the repo (e.g. docs/legal/CLA.md) — link it in
+#      the `path-to-document` field below so contributors can read what they sign.
+#   3. Signatures are recorded in a JSON file on the `cla-signatures` branch (see
+#      `path-to-signatures`). Do not delete that branch/file or signatures are lost.
+#
+# Lighter alternative — DCO:
+#   Instead of a CLA you could use the Developer Certificate of Origin: contributors
+#   add a `Signed-off-by` line via `git commit -s`, optionally enforced by the
+#   DCO GitHub App (https://github.com/apps/dco) or the probot/dco action.
+#   We deliberately default to the CLA (not DCO) because dual-licensing requires
+#   an explicit grant of rights that the DCO alone does not provide.
+
+name: CLA Assistant
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla:
+    runs-on: ubuntu-latest
+    # Run on PR events, or only when a comment is the agree/recheck command.
+    if: >
+      (github.event_name == 'issue_comment' &&
+        (github.event.comment.body == 'recheck' ||
+         contains(github.event.comment.body, 'I have read the CLA Document and I hereby sign the CLA'))) ||
+      github.event_name == 'pull_request_target'
+    steps:
+      - name: CLA Assistant Lite
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          # GITHUB_TOKEN is required by the action runtime.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PAT used to commit the signatures file (see header notes).
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          path-to-signatures: "signatures/version1/cla.json"
+          path-to-document: "https://github.com/tessio-ai/tessio/blob/main/docs/legal/CLA.md"
+          branch: "cla-signatures"
+          # jonmoubayed is the copyright holder/licensor — never signs a CLA to self.
+          allowlist: "jonmoubayed,dependabot[bot],renovate[bot],*[bot]"
+          custom-pr-sign-comment: "I have read the CLA Document and I hereby sign the CLA"
+          custom-allsigned-prcomment: "✅ All contributors have signed the CLA. Thank you!"
+          lock-pullrequest-aftermerge: false

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/tessio-ai/tessio/blob/main/SECURITY.md
+    about: Tessio handles sensitive IT data. Please disclose security issues privately per our Security Policy — do NOT open a public issue.
+  - name: 💬 Questions & discussions
+    url: https://github.com/tessio-ai/tessio/discussions
+    about: Have a question, idea, or want to share how you use Tessio? Start a thread in GitHub Discussions.

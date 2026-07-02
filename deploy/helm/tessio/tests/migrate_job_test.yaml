@@ -1,0 +1,21 @@
+suite: migrate job
+templates:
+  - templates/migrate-job.yaml
+tests:
+  - it: is a Job with the migrate image and wait-for-db init
+    asserts:
+      - isKind:
+          of: Job
+      - matchRegex:
+          path: "spec.template.spec.containers[0].image"
+          pattern: "tessio-migrate:"
+      - equal:
+          path: "spec.template.spec.initContainers[0].name"
+          value: wait-for-db
+  - it: omits wait-for-db when using external db
+    set:
+      postgresql.enabled: false
+      externalDatabase.url: postgres://u:p@db:5432/d
+    asserts:
+      - notExists:
+          path: spec.template.spec.initContainers

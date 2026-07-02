@@ -1,0 +1,133 @@
+/* Workflow builder + run views, on console.css tokens. */
+
+.wf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--warning); display: inline-block; flex: none; }
+
+.wf-runbadge { font-size: 12px; color: var(--muted-foreground); }
+.wf-runbadge.tone-danger { color: var(--danger); }
+.wf-runbadge.tone-success { color: var(--success); }
+.wf-runbadge.tone-info { color: var(--info); }
+
+/* ---- editor layout ---- */
+.wf-editor { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.wf-toolbar {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  border-bottom: 1px solid var(--border); background: var(--surface); flex: none;
+}
+.wf-toolbar .wf-name {
+  font: inherit; font-size: 15px; font-weight: 600; color: var(--foreground);
+  background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 5px 8px; min-width: 120px; max-width: 320px;
+}
+.wf-toolbar .wf-name:hover { border-color: var(--border); }
+.wf-toolbar .wf-name:focus { border-color: var(--ring); outline: none; background: var(--background); }
+.wf-body { display: flex; flex: 1; min-height: 0; }
+.wf-canvas { flex: 1; min-width: 0; position: relative; }
+
+/* ---- node palette ---- */
+.wf-palette {
+  position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; flex-direction: column; gap: 4px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px; box-shadow: var(--shadow-md, 0 4px 16px rgba(0,0,0,.08));
+}
+.wf-palette button {
+  display: flex; align-items: center; gap: 8px; font: inherit; font-size: 12.5px; font-weight: 500; color: var(--foreground);
+  background: transparent; border: 0; border-radius: 8px; padding: 6px 9px; cursor: pointer; text-align: left;
+}
+.wf-palette button:hover { background: var(--neutral-tint, rgba(0,0,0,.05)); }
+.wf-palette .wf-palette-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--faint-foreground); padding: 4px 9px 2px; }
+
+/* ---- publish error overlay ---- */
+.wf-errors {
+  position: absolute; top: 12px; right: 12px; z-index: 5; max-width: 380px;
+  background: var(--surface); border: 1px solid color-mix(in oklab, var(--danger) 35%, transparent);
+  border-radius: 12px; padding: 10px 12px; box-shadow: var(--shadow-md, 0 4px 16px rgba(0,0,0,.08));
+}
+.wf-errors h4 { margin: 0 0 6px; font-size: 12.5px; color: var(--danger); }
+.wf-errors ul { margin: 0; padding-left: 16px; font-size: 12.5px; color: var(--foreground); display: grid; gap: 3px; }
+
+/* ---- node card ---- */
+.wf-node {
+  width: 220px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; display: flex; gap: 9px; align-items: flex-start; cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.wf-node.selected { border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 18%, transparent); }
+.wf-node .wf-node-icon {
+  width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex: none;
+  color: #fff;
+}
+.wf-node .wf-node-title { font-size: 13px; font-weight: 600; color: var(--foreground); line-height: 1.25; }
+.wf-node .wf-node-sub { font-size: 11.5px; color: var(--muted-foreground); line-height: 1.35; margin-top: 2px; word-break: break-word; }
+
+/* run status accents */
+.wf-node[data-status='completed'] { border-color: color-mix(in oklab, var(--success) 55%, var(--border)); }
+.wf-node[data-status='failed'] { border-color: var(--danger); box-shadow: 0 0 0 3px color-mix(in oklab, var(--danger) 15%, transparent); }
+.wf-node[data-status='running'] { border-color: var(--info); }
+.wf-node[data-status='not-run'] { opacity: 0.55; }
+.wf-node .wf-node-status { margin-left: auto; flex: none; }
+
+/* react-flow theme alignment */
+.wf-canvas .react-flow__edge-path { stroke: var(--muted-foreground); }
+.wf-canvas .react-flow__edge.selected .react-flow__edge-path { stroke: var(--ring); stroke-width: 2; }
+.wf-canvas .react-flow__edge-textbg { fill: var(--surface); }
+.wf-canvas .react-flow__edge-text { fill: var(--muted-foreground); font-size: 10.5px; }
+.wf-canvas .react-flow__handle { width: 9px; height: 9px; background: var(--surface); border: 1.5px solid var(--muted-foreground); }
+.wf-canvas .react-flow__handle:hover { border-color: var(--ring); }
+.wf-canvas .react-flow__attribution { display: none; }
+.wf-canvas .react-flow__controls { box-shadow: none; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.wf-canvas .react-flow__controls-button { background: var(--surface); border-bottom: 1px solid var(--border); fill: var(--foreground); }
+
+/* ---- config panel ---- */
+.wf-panel {
+  width: var(--wf-panel-w, 360px); flex: none; border-left: 1px solid var(--border); background: var(--surface);
+  overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px;
+}
+/* Drag handle to widen the config panel (more room for the script editor). */
+.wf-resize { flex: none; width: 7px; margin-right: -4px; z-index: 5; cursor: col-resize; }
+.wf-resize::after { content: ''; display: block; width: 1px; height: 100%; margin: 0 auto; background: transparent; transition: background 0.12s; }
+.wf-resize:hover::after, .wf-resize.dragging::after { background: var(--ring); width: 2px; }
+.wf-panel h3 { margin: 0; font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
+.wf-panel .wf-panel-hint { font-size: 12px; color: var(--muted-foreground); margin: -8px 0 0; line-height: 1.45; }
+.wf-field { display: flex; flex-direction: column; gap: 5px; }
+.wf-field > label { font-size: 12px; font-weight: 600; color: var(--muted-foreground); }
+.wf-field input[type='text'], .wf-field input[type='number'], .wf-field select, .wf-field textarea {
+  font: inherit; font-size: 13px; color: var(--foreground); background: var(--background);
+  border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; width: 100%;
+}
+.wf-field textarea { resize: vertical; min-height: 70px; }
+.wf-field textarea.wf-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; min-height: 180px; line-height: 1.5; white-space: pre; }
+.wf-field input:focus, .wf-field select:focus, .wf-field textarea:focus { border-color: var(--ring); outline: none; }
+.wf-check { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.wf-rows { display: flex; flex-direction: column; gap: 6px; }
+.wf-row { display: flex; gap: 6px; align-items: center; }
+.wf-row input, .wf-row select { min-width: 0; }
+.wf-row .wf-row-x { flex: none; }
+.wf-addrow {
+  align-self: flex-start; font: inherit; font-size: 12.5px; color: var(--primary); background: none; border: 0; padding: 2px 0; cursor: pointer;
+}
+.wf-panel .wf-danger-zone { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
+.wf-edge-item { border: 1px solid var(--border); border-radius: 10px; padding: 9px 10px; display: flex; flex-direction: column; gap: 8px; }
+.wf-edge-item .wf-edge-head { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; }
+
+/* ---- template autocomplete dropdown ---- */
+/* Rendered via createPortal on document.body with position:fixed inline, */
+/* so the position/top/left/right/z-index here are overridden by inline style. */
+.wf-suggest {
+  padding: 4px 0; list-style: none;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: var(--shadow-md, 0 4px 16px rgba(0,0,0,.12));
+  max-height: 220px; overflow-y: auto;
+}
+.wf-suggest li {
+  padding: 6px 10px; font-size: 12.5px; color: var(--foreground);
+  cursor: pointer; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wf-suggest li:hover,
+.wf-suggest li.active { background: color-mix(in oklab, var(--primary) 12%, transparent); color: var(--primary); }
+.wf-suggest li .muted { color: var(--muted-foreground); font-size: 11.5px; }
+
+/* ---- run views ---- */
+.wf-runrow-error { font-size: 12px; color: var(--danger); max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wf-inspector pre {
+  background: var(--background); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  font-size: 11.5px; line-height: 1.5; overflow: auto; max-height: 220px; margin: 0;
+}
+.wf-inspector .wf-field > label { text-transform: uppercase; letter-spacing: 0.03em; font-size: 11px; }

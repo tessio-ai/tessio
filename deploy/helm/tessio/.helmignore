@@ -1,0 +1,4 @@
+.git
+*.md
+ci/
+tests/__snapshot__/

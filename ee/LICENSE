@@ -1,0 +1,109 @@
+Tessio Enterprise Edition License Agreement
+Version 1.0 — 2026
+
+This Tessio Enterprise Edition License Agreement (the "Agreement") governs the
+contents of this directory and all of its subdirectories (the "Enterprise
+Software"). The Enterprise Software is part of the Tessio project but is NOT
+licensed under the open-source license (GNU Affero General Public License,
+version 3.0) that governs the rest of the repository. It is proprietary.
+
+1. DEFINITIONS
+   "Licensor" means Jonathan Moubayed, the copyright holder of the Enterprise
+   Software, and its successors and assigns.
+   "Enterprise Software" means the source code, object code, configuration, and
+   associated materials contained in the `ee/` directory of the Tessio
+   repository, and any modifications to them.
+   "Commercial Agreement" means a separate, signed subscription or license
+   agreement between You and the Licensor that expressly grants rights to use the
+   Enterprise Software.
+   "You" means the individual or legal entity exercising rights under this
+   Agreement.
+
+2. RESERVATION OF RIGHTS
+   The Enterprise Software is licensed, not sold. Except for the limited rights
+   expressly granted in Sections 3 and 4, the Licensor reserves all right, title,
+   and interest in and to the Enterprise Software, including all intellectual
+   property rights therein. No rights are granted by implication, estoppel, or
+   otherwise.
+
+3. LICENSE GRANT (REQUIRES A COMMERCIAL AGREEMENT)
+   Subject to Your compliance with this Agreement and the terms of a valid
+   Commercial Agreement, the Licensor grants You a non-exclusive,
+   non-transferable, non-sublicensable, revocable license to install, run, and
+   modify the Enterprise Software solely as, and to the extent, permitted by that
+   Commercial Agreement, and solely for Your internal business operations.
+
+4. LIMITED RIGHTS (WITHOUT A COMMERCIAL AGREEMENT)
+   Whether or not You have a Commercial Agreement, You may:
+   (a) view and read the source code of the Enterprise Software;
+   (b) build and run the Enterprise Software solely to execute the project's
+       automated tests and continuous-integration checks; and
+   (c) modify the Enterprise Software solely to prepare and submit contributions
+       back to the Tessio project under the project's Contributor License
+       Agreement.
+   These limited rights do NOT permit use of the Enterprise Software in
+   production, for internal business purposes, or to provide any product or
+   service to any third party.
+
+5. RESTRICTIONS
+   Except as expressly permitted by a Commercial Agreement or by Section 4, You
+   may not: (a) use the Enterprise Software in production or for any commercial or
+   internal business purpose; (b) copy, distribute, sublicense, sell, rent,
+   lease, loan, or otherwise make the Enterprise Software available to any third
+   party; (c) host, operate, or offer the Enterprise Software as a hosted or
+   managed service; (d) remove, obscure, or alter any proprietary or licensing
+   notices; or (e) circumvent, disable, or interfere with any license, edition,
+   or entitlement check.
+
+6. CONTRIBUTIONS
+   Contributions to the Enterprise Software are governed by the project's
+   Contributor License Agreement (see LICENSING.md and docs/legal/CLA.md). By
+   submitting a contribution, You grant the Licensor the rights set out therein,
+   including the right to license Your contribution under both this Agreement and
+   the project's open-source license.
+
+7. COMMUNITY EDITION
+   A Community build of Tessio does not include the Enterprise Software and does
+   not require this Agreement. The remainder of the repository — everything
+   outside the `ee/` directory — is licensed under the GNU AGPL-3.0; see the
+   LICENSE file at the repository root.
+
+8. TERM AND TERMINATION
+   Any license granted under Section 3 terminates automatically upon the
+   expiration or termination of the applicable Commercial Agreement or upon Your
+   breach of this Agreement. Upon termination, You must immediately cease all use
+   of the Enterprise Software permitted under Section 3 and destroy all copies not
+   otherwise permitted by Section 4. Sections 2, 5, 9, 10, and 11 survive
+   termination.
+
+9. NO WARRANTY
+   THE ENTERPRISE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT
+   WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+   IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE,
+   AND NONINFRINGEMENT. THE LICENSOR DOES NOT WARRANT THAT THE ENTERPRISE SOFTWARE
+   WILL BE ERROR-FREE OR UNINTERRUPTED.
+
+10. LIMITATION OF LIABILITY
+    TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
+    LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,
+    EXEMPLARY, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE, DATA, OR
+    GOODWILL, ARISING OUT OF OR RELATING TO THIS AGREEMENT OR THE ENTERPRISE
+    SOFTWARE, WHETHER IN CONTRACT, TORT, OR OTHERWISE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGES.
+
+11. GOVERNING LAW
+    This Agreement is governed by the laws of the Licensor's principal place of
+    business, without regard to its conflict-of-laws rules. The specific
+    governing-law jurisdiction and venue will be set out in the applicable
+    Commercial Agreement.
+
+12. ENTIRE AGREEMENT
+    This Agreement, together with any applicable Commercial Agreement, constitutes
+    the entire agreement between You and the Licensor regarding the Enterprise
+    Software and supersedes all prior or contemporaneous understandings on that
+    subject.
+
+Copyright (c) 2026 Jonathan Moubayed. All rights reserved.
+
+For commercial licensing or questions about this Agreement, contact the
+maintainers (see SECURITY.md and the repository contacts).

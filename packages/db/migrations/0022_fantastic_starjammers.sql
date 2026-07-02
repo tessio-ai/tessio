@@ -1,0 +1,1 @@
+ALTER TABLE "workflows" ADD COLUMN "schedule_last_fired_at" timestamp with time zone;

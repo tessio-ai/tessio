@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+cd /app/migrate
+echo "[aio] running database migrations..."
+./node_modules/.bin/drizzle-kit migrate
+if [ -n "$TESSIO_ADMIN_EMAIL" ] && [ -n "$TESSIO_ADMIN_PASSWORD" ]; then
+  echo "[aio] seeding admin + org defaults..."
+  ./node_modules/.bin/tsx src/seed-cli.ts
+else
+  echo "[aio] no admin creds set — skipping seed."
+fi
+echo "[aio] migrate done."

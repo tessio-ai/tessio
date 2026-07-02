@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tessio.fullname" . }}-caddy
+  labels: {{- include "tessio.labels" . | nindent 4 }}
+data:
+  Caddyfile: |
+    {$TESSIO_SITE_ADDRESS::80} {
+    	encode gzip
+    	handle /api/* {
+    		reverse_proxy {{ include "tessio.fullname" . }}-api:3000
+    	}
+    	handle {
+    		root * /srv
+    		try_files {path} /index.html
+    		file_server
+    	}
+    }

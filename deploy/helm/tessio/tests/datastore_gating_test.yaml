@@ -1,0 +1,23 @@
+suite: datastore gating
+templates:
+  - templates/postgres-statefulset.yaml
+  - templates/redis-deployment.yaml
+tests:
+  - it: renders bundled datastores by default
+    template: templates/postgres-statefulset.yaml
+    asserts:
+      - isKind: { of: StatefulSet }
+  - it: omits bundled postgres when disabled
+    template: templates/postgres-statefulset.yaml
+    set:
+      postgresql.enabled: false
+      externalDatabase.url: postgres://u:p@db:5432/d
+    asserts:
+      - hasDocuments: { count: 0 }
+  - it: omits bundled redis when disabled
+    template: templates/redis-deployment.yaml
+    set:
+      redis.enabled: false
+      externalRedis.url: redis://r:6379
+    asserts:
+      - hasDocuments: { count: 0 }

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # must provide the vector + pgcrypto extensions, same as the compose stack
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: tessio
+          POSTGRES_PASSWORD: tessio
+          POSTGRES_DB: tessio
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tessio"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @tessio/db test:integration
+        env:
+          TEST_DATABASE_URL: postgres://tessio:tessio@localhost:5432/tessio_test
+      - run: pnpm --filter @tessio/api test:integration
+        env:
+          TEST_DATABASE_URL: postgres://tessio:tessio@localhost:5432/tessio_test
+      - run: pnpm --filter @tessio/ee-server test:integration
+        env:
+          TEST_DATABASE_URL: postgres://tessio:tessio@localhost:5432/tessio_test

@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tessio.fullname" . }}-worker
+  labels:
+    {{- include "tessio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels: {{- include "tessio.componentSelectorLabels" (dict "ctx" . "component" "worker") | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "tessio.componentSelectorLabels" (dict "ctx" . "component" "worker") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "tessio.serviceAccountName" . }}
+      securityContext: {{- toYaml .Values.worker.podSecurityContext | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: wait-for-migrate
+          image: bitnami/kubectl:1.31
+          command:
+            - sh
+            - -c
+            - |
+              until kubectl get job/{{ include "tessio.migrateJobName" . }} >/dev/null 2>&1; do
+                echo "waiting for migrate job to be created..."; sleep 2;
+              done
+              kubectl wait --for=condition=complete --timeout=600s job/{{ include "tessio.migrateJobName" . }}
+      containers:
+        - name: worker
+          image: {{ include "tessio.image" (dict "ctx" . "component" "worker") | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext: {{- toYaml .Values.worker.securityContext | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "tessio.fullname" . }}-config
+          env:
+            {{- if .Values.postgresql.enabled }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: {{ include "tessio.postgres.fullname" . }}, key: POSTGRES_PASSWORD }
+            {{- end }}
+            - name: DATABASE_URL
+              value: {{ include "tessio.databaseUrl" . | quote }}
+            - name: TESSIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef: { name: {{ include "tessio.secretName" . }}, key: TESSIO_SECRET_KEY }
+            # Presented to the runner's /run so script execution stays authenticated.
+            - name: RUNNER_TOKEN
+              valueFrom:
+                secretKeyRef: { name: {{ include "tessio.secretName" . }}, key: RUNNER_TOKEN }
+          resources: {{- toYaml .Values.worker.resources | nindent 12 }}
+      {{- with .Values.worker.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}

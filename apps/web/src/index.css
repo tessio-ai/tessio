@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+
+/* Scan the workspace UI package's source for class names. */
+@source '../../../packages/ui/src';
+@source '../../../packages/forms/src';
+
+/* Minimal shadcn-style tokens so the Button's color classes resolve. */
+@theme {
+  --color-background: #ffffff;
+  --color-primary: #4f46e5;
+  --color-primary-foreground: #ffffff;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-input: #e2e8f0;
+  --color-ring: #4f46e5;
+}

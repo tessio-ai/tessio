@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tessio.fullname" . }}-config
+  labels: {{- include "tessio.labels" . | nindent 4 }}
+data:
+  HOST: "0.0.0.0"
+  NODE_ENV: "production"
+  TESSIO_SITE_ADDRESS: {{ .Values.config.siteAddress | quote }}
+  TESSIO_STORAGE_DIR: "/data/storage"
+  REDIS_URL: {{ include "tessio.redisUrl" . | quote }}
+  RUNNER_URL: "http://{{ include "tessio.fullname" . }}-runner:3100"
