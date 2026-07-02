@@ -8,8 +8,8 @@ body:
       value: |
         Thanks for helping improve Tessio! 🚀
 
-        Please search [existing issues](https://github.com/tessio/tessio/issues) and
-        [Discussions](https://github.com/tessio/tessio/discussions) first — your idea may already be under way.
+        Please search [existing issues](https://github.com/tessio-ai/tessio/issues) and
+        [Discussions](https://github.com/tessio-ai/tessio/discussions) first — your idea may already be under way.
 
   - type: checkboxes
     id: no-duplicate
