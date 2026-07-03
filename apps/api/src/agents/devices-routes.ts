@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { Db } from '@tessio/db';
-import { agentDevicesRepo, agentSoftwareRepo } from '@tessio/db';
+import { agentDevicesRepo, agentSoftwareRepo, assetsRepo } from '@tessio/db';
 import { ApiError } from '../errors';
 import { queryBody } from '../resources/schemas';
 
@@ -47,6 +47,7 @@ export function registerDevicesRoutes(app: FastifyInstance, db: Db): void {
   const r = app.withTypeProvider<ZodTypeProvider>();
   const devices = agentDevicesRepo(db);
   const software = agentSoftwareRepo(db);
+  const assets = assetsRepo(db);
 
   r.post('/agent/devices/query', { schema: { body: queryBody, response: { 200: pageResponse } } }, async (req) => {
     const { rows, nextCursor } = await devices.query(req.orgId, req.body);
@@ -69,6 +70,10 @@ export function registerDevicesRoutes(app: FastifyInstance, db: Db): void {
   });
 
   r.post('/agent/devices/:id/link', { schema: { params: idParam, body: linkBody, response: { 200: z.record(z.unknown()) } } }, async (req) => {
+    // The linked asset must belong to the caller's org — otherwise a staff user could
+    // point a device at another org's asset UUID (cross-tenant reference).
+    const asset = await assets.getById(req.orgId, req.body.assetId);
+    if (!asset) throw new ApiError(404, 'Not Found', 'No such asset.');
     const row = await devices.linkAsset(req.orgId, req.params.id, req.body.assetId, req.user.id);
     if (!row) throw new ApiError(404, 'Not Found', 'No such device.');
     return present(row as DeviceRow);

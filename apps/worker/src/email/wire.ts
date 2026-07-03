@@ -103,6 +103,11 @@ export async function buildOrgPollDeps(
       return !!t;
     },
 
+    ticketRequesterId: async (id) => {
+      const t = await ticketsRepo(db).getById(orgId, id);
+      return t ? ((t.requesterId as string | null) ?? null) : null;
+    },
+
     addComment: async ({ ticketId, body, internal, authorId }) => {
       await addComment(db, {
         orgId,

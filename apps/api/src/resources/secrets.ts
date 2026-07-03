@@ -17,8 +17,13 @@ const presented = z.object({
   updatedAt: z.string(),
   updatedBy: z.string().nullable(),
 });
-const createBody = z.object({ name: z.string().regex(SECRET_NAME_RE, 'Use lowercase letters, digits, and underscores.'), value: z.string().min(4) });
-const replaceBody = z.object({ value: z.string().min(4) });
+// Minimum 8 so the last-4 display hint can never expose a meaningful fraction of
+// (let alone all of) the secret, as a 4-char minimum did.
+const createBody = z.object({ name: z.string().regex(SECRET_NAME_RE, 'Use lowercase letters, digits, and underscores.'), value: z.string().min(8) });
+const replaceBody = z.object({ value: z.string().min(8) });
+
+/** Last-4 display hint, blanked for values too short to hint safely. */
+const hintOf = (value: string): string => (value.length > 6 ? value.slice(-4) : '');
 
 function present(row: { name: string; hint: string; updatedAt: Date; updatedBy: string | null | undefined }) {
   return {
@@ -45,7 +50,7 @@ export function registerSecretsRoutes(app: FastifyInstance, db: Db): void {
       orgId: req.orgId,
       name,
       valueCiphertext: encryptSecret(value, requireSecretKey()),
-      hint: value.slice(-4),
+      hint: hintOf(value),
       createdBy: req.user.id,
     });
     reply.code(201);
@@ -54,7 +59,7 @@ export function registerSecretsRoutes(app: FastifyInstance, db: Db): void {
 
   r.put('/secrets/:name', { schema: { params: nameParam, body: replaceBody, response: { 200: presented } } }, async (req) => {
     const { value } = req.body;
-    const row = await repo.updateValue(req.orgId, req.params.name, encryptSecret(value, requireSecretKey()), value.slice(-4), req.user.id);
+    const row = await repo.updateValue(req.orgId, req.params.name, encryptSecret(value, requireSecretKey()), hintOf(value), req.user.id);
     if (!row) throw new ApiError(404, 'Not Found', `No secret named "${req.params.name}".`);
     return present(row);
   });

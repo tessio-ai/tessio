@@ -22,9 +22,18 @@ type Row = { id: string; filename: string; size: number; mime: string; uploadedB
 const safe = (a: Row) => ({ id: a.id, filename: a.filename, size: a.size, mime: a.mime, uploadedBy: a.uploadedBy, createdAt: String(a.createdAt) });
 
 async function assertTicketAccess(db: Db, ticketScoped: boolean, orgId: string, recordId: string, user: { id: string; role: string }) {
-  if (!ticketScoped || user.role !== 'requester') return;
-  const row = await ticketsRepo(db).getById(orgId, recordId);
-  if (!row || row.requesterId !== user.id) throw notFound(`tickets ${recordId} not found`);
+  if (!ticketScoped) {
+    // Non-ticket attachments (asset / kb_article / form_submission) hang off
+    // staff-only parent resources — default-deny requesters rather than fall
+    // through to an unauthenticated same-org read.
+    if (user.role === 'requester') throw notFound(`attachments ${recordId} not found`);
+    return;
+  }
+  if (user.role === 'admin') return;
+  // Agents are constrained to team-visible tickets; requesters to their own.
+  const row = await ticketsRepo(db).getById(orgId, recordId, { userId: user.id, role: user.role });
+  if (!row) throw notFound(`tickets ${recordId} not found`);
+  if (user.role === 'requester' && row.requesterId !== user.id) throw notFound(`tickets ${recordId} not found`);
 }
 
 /** POST/GET /:segment/:id/attachments for one record kind. Multipart upload + list. */

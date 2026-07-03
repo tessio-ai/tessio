@@ -25,8 +25,10 @@ function assertFeature(settings: AiSettings, feature: 'summary' | 'draft' | 'tri
   if (!modelToCheck) throw conflict('Tess AI has no model configured');
 }
 
-async function loadTicketContext(db: Db, orgId: string, ticketId: string): Promise<TicketContext> {
-  const ticket = await ticketsRepo(db).getById(orgId, ticketId);
+type TeamScope = { userId: string; role: string };
+
+async function loadTicketContext(db: Db, orgId: string, ticketId: string, scope?: TeamScope): Promise<TicketContext> {
+  const ticket = await ticketsRepo(db).getById(orgId, ticketId, scope);
   if (!ticket) throw notFound(`ticket ${ticketId} not found`);
   const data = (ticket.data ?? {}) as Record<string, unknown>;
   return {
@@ -83,7 +85,8 @@ export function registerTicketAiRoutes(app: FastifyInstance, db: Db): void {
     const { id } = req.params as z.infer<typeof idParam>;
     const settings = await resolveAiSettings(db, req.orgId);
     assertFeature(settings, 'summary');
-    const ticket = await loadTicketContext(db, req.orgId, id);
+    const scope = { userId: req.user.id, role: req.user.role };
+    const ticket = await loadTicketContext(db, req.orgId, id, scope);
     const comments = await loadComments(db, req.orgId, id);
     const result = streamTicketSummary({ model: createTessClient(settings), ticket, comments });
     await streamToReply(reply, result.textStream);
@@ -93,9 +96,10 @@ export function registerTicketAiRoutes(app: FastifyInstance, db: Db): void {
     const { id } = req.params as z.infer<typeof idParam>;
     const settings = await resolveAiSettings(db, req.orgId);
     assertFeature(settings, 'draft');
-    const ticket = await loadTicketContext(db, req.orgId, id);
+    const scope = { userId: req.user.id, role: req.user.role };
+    const ticket = await loadTicketContext(db, req.orgId, id, scope);
     const comments = await loadComments(db, req.orgId, id);
-    const full = await ticketsRepo(db).getById(req.orgId, id);
+    const full = await ticketsRepo(db).getById(req.orgId, id, scope);
     const requesterId = full?.requesterId as string | undefined;
     const requester = requesterId ? await usersRepo(db).findById(requesterId) : undefined;
     const result = streamDraftReply({
@@ -111,7 +115,7 @@ export function registerTicketAiRoutes(app: FastifyInstance, db: Db): void {
     const { id } = req.params as z.infer<typeof idParam>;
     const settings = await resolveAiSettings(db, req.orgId);
     assertFeature(settings, 'triage');
-    const ticket = await loadTicketContext(db, req.orgId, id);
+    const ticket = await loadTicketContext(db, req.orgId, id, { userId: req.user.id, role: req.user.role });
     const candidates = (await usersRepo(db).list(req.orgId))
       .filter((u) => u.role !== 'requester')
       .map((u) => ({ id: u.id, name: u.name }));
@@ -139,7 +143,7 @@ export function registerTicketAiRoutes(app: FastifyInstance, db: Db): void {
   // Read the stored triage for a ticket (used by the detail view + queue).
   r.get('/tickets/:id/ai/triage', { schema: { params: idParam, response: { 200: triageResponse.nullable() } } }, async (req) => {
     const { id } = req.params as z.infer<typeof idParam>;
-    const ticket = await ticketsRepo(db).getById(req.orgId, id);
+    const ticket = await ticketsRepo(db).getById(req.orgId, id, { userId: req.user.id, role: req.user.role });
     if (!ticket) throw notFound(`ticket ${id} not found`);
     const row = await ticketAiTriageRepo(db).get(id);
     if (!row) return null;
@@ -158,10 +162,11 @@ export function registerTicketAiRoutes(app: FastifyInstance, db: Db): void {
     const { id } = req.params as z.infer<typeof idParam>;
     const settings = await resolveAiSettings(db, req.orgId);
     assertFeature(settings, 'similar');
-    // org-scope the source ticket (mirrors the triage GET fix)
-    const ticket = await ticketsRepo(db).getById(req.orgId, id);
-    if (!ticket) throw notFound(`ticket ${id} not found`);
     const scope = { userId: req.user.id, role: req.user.role };
+    // Team-scope the source ticket so an out-of-team agent can't seed a similarity
+    // search from a ticket they can't see (the results are already team-scoped).
+    const ticket = await ticketsRepo(db).getById(req.orgId, id, scope);
+    if (!ticket) throw notFound(`ticket ${id} not found`);
     return ticketEmbeddingsRepo(db).findSimilar(req.orgId, id, { limit: 5, scope });
   });
 }

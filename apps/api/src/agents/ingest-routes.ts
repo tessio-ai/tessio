@@ -43,6 +43,12 @@ export function registerAgentIngestRoutes(app: FastifyInstance, db: Db): void {
     const { enrollmentKey, machineId, hostname, osType, agentVersion } = req.body;
     const key = await keys.findActiveByHash(hashToken(enrollmentKey));
     if (!key) throw new ApiError(401, 'Unauthorized', 'Invalid enrollment key');
+    // A device an admin has removed must not be silently re-enrolled (and re-issued a
+    // working token) by anyone holding the shared enrollment key — require admin re-add.
+    const prior = await devices.findByMachineId(key.orgId, machineId);
+    if (prior?.deletedAt) {
+      throw new ApiError(409, 'Conflict', 'This device was removed by an administrator and cannot self-re-enroll.');
+    }
     const token = generateToken();
     const device = await devices.upsertByMachineId({
       orgId: key.orgId,

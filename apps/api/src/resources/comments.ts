@@ -24,9 +24,11 @@ export function registerCommentRoutes(
   const ticketScoped = kind === 'ticket';
 
   async function assertTicketAccess(orgId: string, recordId: string, user: { id: string; role: string }) {
-    if (!ticketScoped || user.role !== 'requester') return;
-    const row = await ticketsRepo(db).getById(orgId, recordId);
-    if (!row || row.requesterId !== user.id) throw notFound(`tickets ${recordId} not found`);
+    if (!ticketScoped || user.role === 'admin') return;
+    // Agents are constrained to team-visible tickets; requesters to their own.
+    const row = await ticketsRepo(db).getById(orgId, recordId, { userId: user.id, role: user.role });
+    if (!row) throw notFound(`tickets ${recordId} not found`);
+    if (user.role === 'requester' && row.requesterId !== user.id) throw notFound(`tickets ${recordId} not found`);
   }
 
   r.post(

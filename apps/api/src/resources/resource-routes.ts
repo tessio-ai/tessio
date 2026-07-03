@@ -9,9 +9,14 @@ import { notFound } from '../errors';
 import { requireRole } from '../auth/require-role';
 import type { Role } from '../auth/roles';
 
+export interface TeamScope {
+  userId: string;
+  role: string;
+}
+
 export interface ResourceRepo {
   create(values: Record<string, unknown>): Promise<Record<string, unknown>>;
-  getById(orgId: string, id: string): Promise<Record<string, unknown> | undefined>;
+  getById(orgId: string, id: string, teamScope?: TeamScope): Promise<Record<string, unknown> | undefined>;
   update(orgId: string, id: string, patch: Record<string, unknown>): Promise<Record<string, unknown> | undefined>;
   softDelete(orgId: string, id: string): Promise<void>;
   query(
@@ -61,6 +66,10 @@ export function registerResourceRoutes(app: FastifyInstance, cfg: ResourceConfig
   const writeRoles = cfg.writeRoles ?? DEFAULT_ROLES;
   const scoped = cfg.requesterScoped ?? false;
   const isRequester = (role: Role) => scoped && role === 'requester';
+  // For team-scoped resources (tickets), agents may only touch rows whose schema is
+  // visible to their teams — enforced on by-id reads/writes, not just list/query.
+  const teamScopeFor = (user: { id: string; role: Role }): TeamScope | undefined =>
+    cfg.teamScoped ? { userId: user.id, role: user.role } : undefined;
 
   r.post(
     `/${cfg.path}`,
@@ -81,7 +90,7 @@ export function registerResourceRoutes(app: FastifyInstance, cfg: ResourceConfig
     { preHandler: requireRole(...readRoles), schema: { params: idParam, response: { 200: recordResponse } } },
     async (req) => {
       const { id } = req.params as z.infer<typeof idParam>;
-      const row = await cfg.repo.getById(req.orgId, id);
+      const row = await cfg.repo.getById(req.orgId, id, teamScopeFor(req.user));
       if (!row || (isRequester(req.user.role) && row.requesterId !== req.user.id)) {
         throw notFound(`${cfg.path} ${id} not found`);
       }
@@ -94,7 +103,13 @@ export function registerResourceRoutes(app: FastifyInstance, cfg: ResourceConfig
     { preHandler: requireRole(...writeRoles), schema: { params: idParam, body: cfg.updateSchema, response: { 200: recordResponse } } },
     async (req) => {
       const { id } = req.params as z.infer<typeof idParam>;
-      const before = cfg.afterUpdate || cfg.transformUpdate ? await cfg.repo.getById(req.orgId, id) : undefined;
+      const teamScope = teamScopeFor(req.user);
+      // Always resolve `before` when team-scoped so an out-of-team agent is blocked
+      // from mutating a ticket by id (update() itself is not team-scoped).
+      const before = cfg.afterUpdate || cfg.transformUpdate || teamScope
+        ? await cfg.repo.getById(req.orgId, id, teamScope)
+        : undefined;
+      if (teamScope && !before) throw notFound(`${cfg.path} ${id} not found`);
       let patch = req.body as Record<string, unknown>;
       if (cfg.transformUpdate && before) patch = cfg.transformUpdate(before, patch);
       const row = await cfg.repo.update(req.orgId, id, patch);
@@ -109,7 +124,7 @@ export function registerResourceRoutes(app: FastifyInstance, cfg: ResourceConfig
     { preHandler: requireRole(...writeRoles), schema: { params: idParam } },
     async (req, reply) => {
       const { id } = req.params as z.infer<typeof idParam>;
-      const existing = await cfg.repo.getById(req.orgId, id);
+      const existing = await cfg.repo.getById(req.orgId, id, teamScopeFor(req.user));
       if (!existing) throw notFound(`${cfg.path} ${id} not found`);
       await cfg.repo.softDelete(req.orgId, id);
       reply.code(204);

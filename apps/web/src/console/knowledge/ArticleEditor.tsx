@@ -8,6 +8,7 @@ import { useArticle, useKbSchemas, useCreateArticle, useUpdateArticle } from './
 import { CATEGORY_GROUPS } from './kb-types';
 import { slugify } from './slugify';
 import { useAuth } from '../../auth/AuthContext';
+import { sanitizeHtml } from './sanitize';
 import type { ArticleSection, ArticleData } from './kb-types';
 
 type Go = (screen: string, extra?: Record<string, unknown>) => void;
@@ -87,7 +88,10 @@ export function ArticleEditor({ articleId, go }: { articleId?: string; go: Go })
       setCat(d.category ?? '');
       setLinkedForm(d.linkedForm ?? 'report_incident');
       if (bodyRef.current && d.body) {
-        bodyRef.current.innerHTML = bodyToHtml(d.body);
+        // Stored article HTML is authored content; sanitize before it re-enters the
+        // live (contentEditable) DOM so an <img onerror=…>-style payload saved by a
+        // lower-trust author can't execute in this editor's session.
+        bodyRef.current.innerHTML = sanitizeHtml(bodyToHtml(d.body));
         setBodyEmpty(!bodyRef.current.textContent?.trim());
       }
       setLoaded(true);

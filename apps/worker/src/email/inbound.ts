@@ -11,6 +11,12 @@ export interface InboundLookup {
   fromDomain: string;
   ticketExists?: (id: string) => boolean;
   ticketByNumber?: (n: number) => string | null;
+  /**
+   * Whether the sender is authorized to comment on ticket `id` (i.e. is its
+   * requester). Used to gate the guessable `[#N]` subject path; the Message-ID
+   * header path is a capability token and does not need it.
+   */
+  senderOwnsTicket?: (id: string) => boolean;
   senderIsKnown?: boolean;
   acceptNewSenders?: boolean;
 }
@@ -28,14 +34,23 @@ export function decideInbound(email: ParsedEmail, lookup: InboundLookup): Inboun
   if (/(^|<)(no-?reply|mailer-daemon|postmaster)@/.test(sender)) return { kind: 'ignore', reason: 'system-sender' };
   if (sender.endsWith(`@${lookup.fromDomain.toLowerCase()}`)) return { kind: 'ignore', reason: 'loop' };
 
+  // Message-ID threading embeds an unguessable ticket UUID (see encodeTicketMessageId),
+  // so a matching In-Reply-To/References header is itself proof the sender received the
+  // ticket's mail — treat it as a capability token.
   const headerIds = [email.inReplyTo ?? '', ...email.references].filter(Boolean);
   const fromHeader = parseTicketIdFromHeaders(headerIds);
   if (fromHeader && lookup.ticketExists?.(fromHeader)) return { kind: 'comment', ticketId: fromHeader };
 
+  // The [#N] subject token is a *sequential, guessable* ticket number. Without an
+  // ownership check, any external sender could post a public comment onto an
+  // arbitrary ticket by number. Require that the sender is the ticket's requester;
+  // otherwise fall through (their mail becomes a new ticket / is ignored).
   const tok = email.subject.match(NUMBER_TOKEN);
   if (tok && lookup.ticketByNumber) {
     const id = lookup.ticketByNumber(Number(tok[1]));
-    if (id && lookup.ticketExists?.(id)) return { kind: 'comment', ticketId: id };
+    if (id && lookup.ticketExists?.(id) && lookup.senderOwnsTicket?.(id)) {
+      return { kind: 'comment', ticketId: id };
+    }
   }
 
   if (lookup.senderIsKnown) return { kind: 'new-ticket' };

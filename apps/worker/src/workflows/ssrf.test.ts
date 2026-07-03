@@ -27,6 +27,20 @@ describe('isBlockedAddress', () => {
     expect(isBlockedAddress('::ffff:8.8.8.8')).toBe(false);
   });
 
+  it('blocks hex-encoded IPv4-mapped privates (the form new URL() produces)', () => {
+    // new URL('http://[::ffff:169.254.169.254]/') normalises the host to this hex form.
+    for (const ip of ['::ffff:a9fe:a9fe', '::ffff:7f00:1', '::ffff:a00:5', '::ffff:c0a8:1']) {
+      expect(isBlockedAddress(ip), ip).toBe(true);
+    }
+    // ...but a hex-encoded public mapped address is still allowed.
+    expect(isBlockedAddress('::ffff:808:808')).toBe(false); // 8.8.8.8
+  });
+
+  it('blocks IPv4-compatible and NAT64 embeddings of private addresses', () => {
+    expect(isBlockedAddress('::7f00:1')).toBe(true); // ::127.0.0.1 (IPv4-compatible)
+    expect(isBlockedAddress('64:ff9b::a9fe:a9fe')).toBe(true); // NAT64 169.254.169.254
+  });
+
   it('blocks anything unrecognized', () => {
     expect(isBlockedAddress('not-an-ip')).toBe(true);
   });
@@ -49,6 +63,15 @@ describe('assertPublicUrl', () => {
     await expect(assertPublicUrl('http://169.254.169.254/latest/meta-data/')).rejects.toThrow(/private or internal/);
     await expect(assertPublicUrl('http://10.0.0.1:8080/')).rejects.toThrow(/private or internal/);
     await expect(assertPublicUrl('http://[::1]/')).rejects.toThrow(/private or internal/);
+  });
+
+  // Regression: IPv4-mapped IPv6 literals. new URL() normalises the host to the
+  // hex form BEFORE the guard sees it, so these must be exercised through URL
+  // parsing (not the bare string) to catch the bypass.
+  it('rejects IPv4-mapped IPv6 literal hosts (metadata / loopback / RFC1918)', async () => {
+    await expect(assertPublicUrl('http://[::ffff:169.254.169.254]/latest/meta-data/')).rejects.toThrow(/private or internal/);
+    await expect(assertPublicUrl('http://[::ffff:127.0.0.1]:5432/')).rejects.toThrow(/private or internal/);
+    await expect(assertPublicUrl('http://[::ffff:10.0.0.5]/')).rejects.toThrow(/private or internal/);
   });
 
   it('allows a public IP-literal host', async () => {

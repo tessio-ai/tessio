@@ -39,7 +39,10 @@ export interface QueryResult<Row> {
 
 export interface TeamScope {
   userId: string;
-  role: 'admin' | 'agent' | 'requester';
+  // `role` is intentionally widened to string: teamScopeCondition special-cases
+  // 'admin'/'requester' and treats anything else as an agent (most-restrictive,
+  // fail-closed), so callers can pass a loosely-typed role without narrowing.
+  role: string;
 }
 
 /** Extract the sort field's value from a returned row (for the next cursor). */
@@ -77,11 +80,22 @@ export function createRecordRepository<T extends RecordTable>(db: Db, table: T) 
   }
 
   return {
-    async getById(orgId: string, id: string): Promise<Row | undefined> {
+    /**
+     * Fetch one row by id within an org. When `teamScope` is supplied (only
+     * meaningful for team-scoped tables such as tickets) the same visibility
+     * predicate used by list/query is applied, so an agent cannot read a row
+     * whose schema is walled off from their teams by referencing its id directly.
+     */
+    async getById(orgId: string, id: string, teamScope?: TeamScope): Promise<Row | undefined> {
+      const conditions: SQL[] = [eq(table.orgId, orgId), eq(table.id, id), isNull(table.deletedAt)];
+      if (teamScope) {
+        const sc = teamScopeCondition(teamScope);
+        if (sc) conditions.push(sc);
+      }
       const rows = await db
         .select()
         .from(table as PgTable)
-        .where(and(eq(table.orgId, orgId), eq(table.id, id), isNull(table.deletedAt)));
+        .where(and(...conditions));
       return rows[0] as Row | undefined;
     },
 

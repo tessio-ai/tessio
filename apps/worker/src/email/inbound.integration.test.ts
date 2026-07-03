@@ -84,6 +84,11 @@ function buildTestDeps(
       return !!t;
     },
 
+    ticketRequesterId: async (id) => {
+      const t = await repos.tickets.getById(orgId, id);
+      return t ? ((t.requesterId as string | null) ?? null) : null;
+    },
+
     addComment: async ({ ticketId, body, internal, authorId }) => {
       await addComment(db, {
         orgId,

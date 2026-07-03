@@ -37,6 +37,10 @@ export function registerTeamMemberRoutes(app: FastifyInstance, db: Db): void {
 
   r.delete('/teams/:id/members/:userId', { schema: { params: memberIdParam, response: { 204: z.null() } } }, async (req, reply) => {
     const { id, userId } = req.params;
+    // Confirm the team belongs to the caller's org before mutating it (the repo
+    // remove() filters by team id only), matching the GET/POST handlers.
+    const team = await teamsRepo(db).findById(req.orgId, id);
+    if (!team) throw notFound(`team ${id} not found`);
     await teamMembersRepo(db).remove(id, userId);
     reply.code(204);
     return null;
