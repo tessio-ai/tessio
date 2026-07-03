@@ -995,18 +995,119 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
 .ps-btn { font: inherit; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 10px; cursor: pointer; border: 1px solid #e2e4e9; background: #fff; color: #16181d; white-space: nowrap; }
 .ps-btn.primary { background: var(--pa); color: #fff; border-color: transparent; }
 
-/* ---- Login ---- */
-.login-screen { min-height: 100vh; display: grid; place-items: center; background: var(--background); padding: 24px; }
-.login-card { width: 360px; max-width: 100%; display: flex; flex-direction: column; gap: 14px; padding: 28px; background: var(--card, #fff); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.06); }
-.login-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-.login-logo { width: 34px; height: 34px; border-radius: 9px; background: var(--primary); color: #fff; font-weight: 700; display: grid; place-items: center; }
-.login-title { font-size: 16px; font-weight: 600; }
-.login-field { display: flex; flex-direction: column; gap: 6px; font-size: var(--t-small); color: var(--muted-foreground); }
-.login-field input { padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--background); color: var(--foreground); }
-.login-error { color: var(--danger); font-size: var(--t-small); }
-.login-submit { justify-content: center; margin-top: 4px; }
-.login-divider { display: flex; align-items: center; gap: 10px; color: var(--muted-foreground); font-size: var(--t-small); }
-.login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+/* ---- Login (ambient aurora + frosted glass) ---- */
+/* The entry screen is intentionally its own branded surface, independent of the
+   app light/dark theme. Pure-CSS gradients only (no external assets) to stay
+   within the strict CSP. */
+.login-screen {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow: hidden;
+  /* Rich indigo base so the aurora blobs read as vivid colour, not faint glows. */
+  background: #14102e;
+  isolation: isolate;
+}
+
+/* Aurora: large, vivid, slowly-drifting colour fields built from the brand
+   indigo→violet palette plus cool/warm accents. */
+.login-aurora { position: absolute; inset: -25%; z-index: -2; filter: blur(56px); }
+.login-aurora i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  opacity: 0.9;
+  mix-blend-mode: screen;
+  will-change: transform;
+  animation: login-drift 22s ease-in-out infinite alternate;
+}
+.login-aurora i:nth-child(1) { width: 52vw; height: 52vw; left: -8vw;  top: -12vw; background: radial-gradient(circle at 35% 35%, #6d5efc 0%, rgba(109,94,252,0) 72%); animation-delay: 0s; }
+.login-aurora i:nth-child(2) { width: 48vw; height: 48vw; right: -10vw; top: -8vw; background: radial-gradient(circle at 60% 40%, #b16cff 0%, rgba(177,108,255,0) 72%); animation-delay: -4s; }
+.login-aurora i:nth-child(3) { width: 50vw; height: 50vw; left: 4vw;   bottom: -18vw; background: radial-gradient(circle at 40% 60%, #3b82f6 0%, rgba(59,130,246,0) 72%); animation-delay: -8s; }
+.login-aurora i:nth-child(4) { width: 40vw; height: 40vw; right: -6vw; bottom: -14vw; background: radial-gradient(circle at 50% 50%, #ec4899 0%, rgba(236,72,153,0) 74%); opacity: 0.8; animation-delay: -12s; }
+/* Soft halo behind the card + gentle edge vignette for depth (kept light so the
+   colour still reaches the corners). */
+.login-screen::after {
+  content: '';
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(38vw 38vw at 50% 46%, rgba(160,150,255,0.16), transparent 70%),
+    radial-gradient(130% 120% at 50% 8%, transparent 62%, rgba(4,2,20,0.5) 100%);
+}
+
+@keyframes login-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(4vw, 3vw, 0) scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-aurora i { animation: none; }
+}
+
+.login-card {
+  width: 400px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 34px 32px;
+  border-radius: 20px;
+  color: #f4f5fb;
+  /* Frosted glass */
+  background: linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 24px 60px rgba(6, 8, 30, 0.45), inset 0 1px 0 rgba(255,255,255,0.22);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(22px) saturate(140%);
+}
+
+.login-brand { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 8px; text-align: center; }
+.login-logo {
+  width: 52px; height: 52px; border-radius: 15px;
+  background: linear-gradient(150deg, #6366f1, #a855f7);
+  color: #fff; font-weight: 800; font-size: 24px;
+  display: grid; place-items: center;
+  box-shadow: 0 10px 26px rgba(99, 102, 241, 0.5), inset 0 1px 0 rgba(255,255,255,0.4);
+}
+.login-title { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; color: #fff; }
+.login-subtitle { font-size: 13.5px; color: rgba(233,235,245,0.72); margin-top: -6px; }
+
+.login-field { display: flex; flex-direction: column; gap: 6px; font-size: var(--t-small); font-weight: 500; color: rgba(233,235,245,0.82); }
+.login-field input {
+  padding: 11px 13px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 11px;
+  font-size: 14px;
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.login-field input::placeholder { color: rgba(233,235,245,0.4); }
+.login-field input:focus {
+  outline: none;
+  border-color: rgba(165,168,250,0.9);
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 0 0 3px rgba(129, 120, 245, 0.35);
+}
+.login-field input:-webkit-autofill { -webkit-text-fill-color: #fff; transition: background-color 9999s; }
+
+.login-error { color: #fecdd3; background: rgba(190, 18, 60, 0.28); border: 1px solid rgba(253, 164, 175, 0.35); padding: 9px 11px; border-radius: 10px; font-size: var(--t-small); }
+
+/* On the glass surface the primary button carries the brand gradient. */
+.login-submit { justify-content: center; margin-top: 6px; padding: 11px 16px; font-weight: 600; border: none; color: #fff; background: linear-gradient(150deg, #6366f1, #8b5cf6); box-shadow: 0 10px 24px rgba(99,102,241,0.45); }
+.login-submit:hover:not(:disabled) { filter: brightness(1.06); }
+.login-submit:disabled { opacity: 0.7; cursor: default; }
+/* SSO button reads as the secondary option: subtle glass, not the gradient. */
+.login-sso { justify-content: center; padding: 11px 16px; font-weight: 600; color: #fff; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.2); }
+.login-sso:hover { background: rgba(255,255,255,0.16); }
+
+.login-divider { display: flex; align-items: center; gap: 10px; color: rgba(233,235,245,0.55); font-size: var(--t-small); }
+.login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.16); }
+
+@media (max-width: 480px) {
+  .login-card { padding: 26px 22px; border-radius: 16px; }
+}
 .app-loading { min-height: 100vh; display: grid; place-items: center; color: var(--muted-foreground); }
 
 /* ---- Forms admin ---- */
