@@ -69,10 +69,14 @@ export function LoginPage({ onLogin }: { onLogin: (email: string, password: stri
 
   return (
     <div className="login-screen">
+      <div className="login-aurora" aria-hidden="true">
+        <i></i><i></i><i></i><i></i>
+      </div>
       <div className="login-card">
         <div className="login-brand">
           <div className="login-logo">T</div>
-          <div className="login-title">Sign in to Tessio</div>
+          <div className="login-title">Tessio</div>
+          <div className="login-subtitle">Welcome back — sign in to continue</div>
         </div>
 
         {ssoError && (
@@ -83,7 +87,7 @@ export function LoginPage({ onLogin }: { onLogin: (email: string, password: stri
           <>
             <button
               type="button"
-              className="btn btn-primary login-submit"
+              className="btn login-sso"
               onClick={() => { window.location.href = '/api/v1/auth/sso/start'; }}
             >
               {ssoLabel}
@@ -104,7 +108,7 @@ export function LoginPage({ onLogin }: { onLogin: (email: string, password: stri
             <input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </label>
           {error && <div className="login-error" role="alert">{error}</div>}
-          <button className="btn btn-primary login-submit" type="submit" disabled={busy}>
+          <button className="btn login-submit" type="submit" disabled={busy}>
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>

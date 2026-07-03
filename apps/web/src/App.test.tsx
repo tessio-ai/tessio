@@ -14,7 +14,8 @@ describe('App role routing', () => {
   it('shows the sign-in page when unauthenticated (no marketing/cloud landing)', async () => {
     vi.spyOn(authApi, 'me').mockRejectedValue(new Error('401'));
     render(<App />);
-    await waitFor(() => expect(screen.getByText(/sign in to tessio/i)).toBeInTheDocument());
+    // The sign-in card shows the wordmark + "Welcome back" prompt (not a landing page).
+    await waitFor(() => expect(screen.getByText(/welcome back/i)).toBeInTheDocument());
   });
 
   it('shows the console for an admin', async () => {
