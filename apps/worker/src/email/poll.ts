@@ -39,6 +39,9 @@ export interface PollDeps {
   /** Check whether a ticket id exists. */
   ticketExists(id: string): Promise<boolean>;
 
+  /** The requester (owner) user id of a ticket, or null if not found. */
+  ticketRequesterId(id: string): Promise<string | null>;
+
   /** Append a public comment to a ticket. */
   addComment(args: { ticketId: string; body: string; internal: boolean; authorId: string | null }): Promise<void>;
 
@@ -113,6 +116,9 @@ export async function pollOrgInbound(orgId: string, deps: PollDeps): Promise<voi
       const tok = msg.subject.match(NUMBER_TOKEN);
       const subjectTicketId = tok ? await deps.ticketByNumber(Number(tok[1])) : null;
       const subjectTicketExists = subjectTicketId ? await deps.ticketExists(subjectTicketId) : false;
+      // The [#N] path is guessable, so gate it on the sender owning that ticket.
+      const subjectTicketRequester = subjectTicketId ? await deps.ticketRequesterId(subjectTicketId) : null;
+      const senderOwnsSubject = !!(senderUser && subjectTicketRequester && senderUser.id === subjectTicketRequester);
 
       const decision = decideInbound(msg as ParsedEmail, {
         fromDomain: deps.settings.fromDomain,
@@ -124,6 +130,7 @@ export async function pollOrgInbound(orgId: string, deps: PollDeps): Promise<voi
           return false;
         },
         ticketByNumber: () => subjectTicketId,
+        senderOwnsTicket: (id) => id === subjectTicketId && senderOwnsSubject,
       });
 
       if (decision.kind === 'comment') {

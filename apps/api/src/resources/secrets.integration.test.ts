@@ -41,13 +41,21 @@ describe('secrets routes', () => {
     const bad = await app.inject({
       method: 'POST', url: '/api/v1/secrets',
       headers: { cookie: admin.cookie, 'content-type': 'application/json' },
-      payload: { name: 'Bad-Name', value: 'xxxx' },
+      payload: { name: 'Bad-Name', value: 'xxxxyyyy' },
     });
     expect(bad.statusCode).toBe(400);
 
-    const ok = { method: 'POST' as const, url: '/api/v1/secrets', headers: { cookie: admin.cookie, 'content-type': 'application/json' }, payload: { name: 'dup', value: 'xxxx' } };
+    const ok = { method: 'POST' as const, url: '/api/v1/secrets', headers: { cookie: admin.cookie, 'content-type': 'application/json' }, payload: { name: 'dup', value: 'xxxxyyyy' } };
     expect((await app.inject(ok)).statusCode).toBe(201);
     expect((await app.inject(ok)).statusCode).toBe(409);
+
+    // A too-short value is rejected so the last-4 hint can't expose the whole secret.
+    const short = await app.inject({
+      method: 'POST', url: '/api/v1/secrets',
+      headers: { cookie: admin.cookie, 'content-type': 'application/json' },
+      payload: { name: 'shorty', value: 'abcd' },
+    });
+    expect(short.statusCode).toBe(400);
   });
 
   it('replaces and deletes', async () => {

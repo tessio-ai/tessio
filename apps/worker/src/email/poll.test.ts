@@ -15,6 +15,8 @@ function deps(over: Partial<PollDeps> = {}): PollDeps {
     findUserByEmail: vi.fn(async () => ({ id: 'req-1' })),
     ticketByNumber: vi.fn(async () => 'tkt-42'),
     ticketExists: vi.fn(async () => true),
+    // Legitimate case: the sender (req-1) is the requester of the ticket they reply to.
+    ticketRequesterId: vi.fn(async () => 'req-1'),
     addComment: vi.fn(async () => {}),
     createTicket: vi.fn(async () => 'tkt-new'),
     createRequester: vi.fn(async () => 'req-new'),
@@ -33,6 +35,17 @@ it('threads a [#42] reply into a public comment and advances the cursor', async 
   expect(d.linkTicket).toHaveBeenCalledWith('o1', '<m5@ext>', 'tkt-42');
   expect(d.publishCommented).toHaveBeenCalledWith('o1', 'tkt-42', 'req-1');
   expect(d.advanceCursor).toHaveBeenCalledWith('o1', 5, 1);
+});
+
+it('does not inject a [#42] comment when the sender is not the ticket requester', async () => {
+  // Stranger references someone else's ticket by number; must not become a comment.
+  const d = deps({
+    settings: { lastSeenUid: 0, mailbox: 'INBOX', acceptNewSenders: true, defaultSchemaId: 'sch-1', defaultTeamId: null, fromDomain: 'desk.acme.com' },
+    ticketRequesterId: vi.fn(async () => 'someone-else'),
+  });
+  await pollOrgInbound('o1', d);
+  expect(d.addComment).not.toHaveBeenCalled();
+  expect(d.createTicket).toHaveBeenCalled(); // falls through to a new ticket
 });
 
 it('skips a message already claimed (idempotency)', async () => {

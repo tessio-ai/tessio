@@ -11,7 +11,9 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: tessio
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tessio}
+      # Required — refuse to start with a weak/shared default password. Must match
+      # the password embedded in DATABASE_URL.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD to a strong value in .env}
       POSTGRES_DB: tessio
     volumes:
       - tessio_pg:/var/lib/postgresql/data
@@ -25,9 +27,10 @@ services:
     image: redis:7
     restart: unless-stopped
     # Require a password (set REDIS_PASSWORD in .env, and include it in REDIS_URL).
-    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:-}']
+    # Required: an empty value leaves Redis unauthenticated on the internal network.
+    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:?set REDIS_PASSWORD to a strong value in .env}']
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD to a strong value in .env}
     healthcheck:
       test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
       interval: 5s
@@ -98,7 +101,7 @@ services:
       REDIS_URL: ${REDIS_URL}
       TESSIO_SECRET_KEY: ${TESSIO_SECRET_KEY}
       RUNNER_URL: http://runner:3100
-      RUNNER_TOKEN: ${RUNNER_TOKEN:-}
+      RUNNER_TOKEN: ${RUNNER_TOKEN:?set RUNNER_TOKEN to a strong random value in .env}
       EMAIL_POLL_INTERVAL_MS: ${EMAIL_POLL_INTERVAL_MS:-60000}
       SCHEDULE_TICK_INTERVAL_MS: ${SCHEDULE_TICK_INTERVAL_MS:-60000}
       SLA_TICK_INTERVAL_MS: ${SLA_TICK_INTERVAL_MS:-60000}
@@ -122,9 +125,9 @@ services:
       NODE_ENV: production
       RUNNER_PORT: '3100'
       HOST: 0.0.0.0
-      # Shared secret the worker presents to authorize /run (defense in depth on the
-      # internal network). When unset, /run stays open — set RUNNER_TOKEN to lock it.
-      RUNNER_TOKEN: ${RUNNER_TOKEN:-}
+      # Shared secret the worker presents to authorize /run. Required: an empty token
+      # leaves /run open to unauthenticated code execution on the internal network.
+      RUNNER_TOKEN: ${RUNNER_TOKEN:?set RUNNER_TOKEN to a strong random value in .env}
 
   web:
     image: ghcr.io/tessio-ai/tessio-web:${TESSIO_VERSION:-latest}

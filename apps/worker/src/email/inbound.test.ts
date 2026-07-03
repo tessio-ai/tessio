@@ -14,9 +14,31 @@ describe('decideInbound', () => {
     const r = decideInbound({ ...base, references: ['<tkt-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa-x@desk.acme.com>'] }, { ...lookup, ticketExists: () => true });
     expect(r).toEqual({ kind: 'comment', ticketId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' });
   });
-  it('threads via the [#number] subject token when headers are missing', () => {
-    const r = decideInbound({ ...base, subject: 'Re: [#42] Help' }, { ...lookup, ticketByNumber: () => 'tkt-42', ticketExists: () => true });
+  it('threads via the [#number] subject token when the sender owns the ticket', () => {
+    const r = decideInbound(
+      { ...base, subject: 'Re: [#42] Help' },
+      { ...lookup, ticketByNumber: () => 'tkt-42', ticketExists: () => true, senderOwnsTicket: () => true },
+    );
     expect(r).toEqual({ kind: 'comment', ticketId: 'tkt-42' });
+  });
+
+  it('does NOT comment via [#number] when the sender does not own the ticket (injection guard)', () => {
+    // A stranger putting [#42] in the subject must not inject a comment into someone
+    // else's ticket; a known sender falls through to a new ticket instead.
+    const r = decideInbound(
+      { ...base, subject: 'Re: [#42] Help', from: 'stranger@evil.com' },
+      { ...lookup, senderIsKnown: true, ticketByNumber: () => 'tkt-42', ticketExists: () => true, senderOwnsTicket: () => false },
+    );
+    expect(r.kind).toBe('new-ticket');
+  });
+
+  it('still threads a Message-ID (UUID) header reply without an ownership check', () => {
+    // The header path is a capability token (unguessable UUID), so no senderOwnsTicket needed.
+    const r = decideInbound(
+      { ...base, references: ['<tkt-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa-x@desk.acme.com>'] },
+      { ...lookup, ticketExists: () => true },
+    );
+    expect(r).toEqual({ kind: 'comment', ticketId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' });
   });
   it('ignores auto-replies', () => {
     expect(decideInbound({ ...base, autoSubmitted: 'auto-replied' }, lookup).kind).toBe('ignore');

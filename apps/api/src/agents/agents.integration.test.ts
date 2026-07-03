@@ -136,6 +136,44 @@ describe('agent enrollment + ingest', () => {
     expect(ingestWithCookie.statusCode).toBe(401);
   });
 
+  it('does not let a removed device self-re-enroll with the shared key (no resurrection)', async () => {
+    const { admin } = await adminOrg();
+    const key = await createEnrollmentKey(admin.cookie);
+    // Enrollment itself creates the device row (no report needed to list it).
+    await app.inject({
+      method: 'POST', url: '/api/v1/agent/enroll', headers: { 'content-type': 'application/json' },
+      payload: { enrollmentKey: key, machineId: 'm-1', hostname: 'h', osType: 'linux', agentVersion: '0.1.0' },
+    });
+    const deviceId = (await app.inject({ method: 'POST', url: '/api/v1/agent/devices/query', headers: json(admin.cookie), payload: {} })).json().rows[0].id;
+
+    // Admin removes the device.
+    expect((await app.inject({ method: 'DELETE', url: `/api/v1/agent/devices/${deviceId}`, headers: { cookie: admin.cookie } })).statusCode).toBe(204);
+
+    // Re-enrolling the same machineId with the still-valid key must be rejected, not silently resurrected.
+    const reEnroll = await app.inject({
+      method: 'POST', url: '/api/v1/agent/enroll', headers: { 'content-type': 'application/json' },
+      payload: { enrollmentKey: key, machineId: 'm-1', hostname: 'h', osType: 'linux', agentVersion: '0.1.0' },
+    });
+    expect(reEnroll.statusCode).toBe(409);
+  });
+
+  it('rejects linking a device to an asset id that is not in the caller org', async () => {
+    const { admin } = await adminOrg();
+    const key = await createEnrollmentKey(admin.cookie);
+    const token = (await app.inject({
+      method: 'POST', url: '/api/v1/agent/enroll', headers: { 'content-type': 'application/json' },
+      payload: { enrollmentKey: key, machineId: 'm-1', hostname: 'h', osType: 'linux', agentVersion: '0.1.0' },
+    })).json().token;
+    await app.inject({ method: 'POST', url: '/api/v1/agent/report', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, payload: { ...snapshot(), identity: { ...snapshot().identity, osType: 'linux' } } });
+    const deviceId = (await app.inject({ method: 'POST', url: '/api/v1/agent/devices/query', headers: json(admin.cookie), payload: {} })).json().rows[0].id;
+
+    const link = await app.inject({
+      method: 'POST', url: `/api/v1/agent/devices/${deviceId}/link`,
+      headers: json(admin.cookie), payload: { assetId: crypto.randomUUID() },
+    });
+    expect(link.statusCode).toBe(404);
+  });
+
   it('forbids non-admins from managing enrollment keys', async () => {
     const [org] = await db.insert(orgs).values({ name: 'Org', slug: `o-${crypto.randomUUID()}` }).returning();
     const agent = await loginAs(app, db, { orgId: org.id, role: 'agent' });

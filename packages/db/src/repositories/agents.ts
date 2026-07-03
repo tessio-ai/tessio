@@ -52,7 +52,21 @@ export function agentDevicesRepo(db: Db) {
   return {
     ...base,
 
-    /** Enroll/re-enroll: insert by (orgId, machineId), refreshing the device token on conflict. */
+    /** A device by (orgId, machineId) regardless of soft-delete state; used to guard re-enrollment. */
+    async findByMachineId(orgId: string, machineId: string) {
+      const rows = await db
+        .select()
+        .from(agentDevices)
+        .where(and(eq(agentDevices.orgId, orgId), eq(agentDevices.machineId, machineId)));
+      return rows[0];
+    },
+
+    /**
+     * Enroll/re-enroll: insert by (orgId, machineId), refreshing the device token on
+     * conflict. Deliberately does NOT clear `deletedAt`: a device an admin removed must
+     * not be silently resurrected (and handed a fresh working token) by a holder of the
+     * shared enrollment key. The enroll route rejects re-enrollment onto a deleted row.
+     */
     async upsertByMachineId(values: {
       orgId: string;
       machineId: string;
@@ -75,7 +89,6 @@ export function agentDevicesRepo(db: Db) {
             status: 'online',
             lastSeenAt: new Date(),
             updatedAt: new Date(),
-            deletedAt: null,
           },
         })
         .returning();
