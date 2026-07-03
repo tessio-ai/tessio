@@ -8,10 +8,10 @@ body:
       value: |
         Thanks for taking the time to file a bug report! 🐛
 
-        Please search [existing issues](https://github.com/tessio/tessio/issues) first to avoid duplicates.
+        Please search [existing issues](https://github.com/tessio-ai/tessio/issues) first to avoid duplicates.
 
         **Do not report security vulnerabilities here.** See our
-        [Security Policy](https://github.com/tessio/tessio/blob/main/SECURITY.md) for private disclosure.
+        [Security Policy](https://github.com/tessio-ai/tessio/blob/main/SECURITY.md) for private disclosure.
 
   - type: checkboxes
     id: not-security
@@ -19,7 +19,7 @@ body:
       label: This is not a security report
       description: Tessio handles sensitive IT data. Security issues must be disclosed privately.
       options:
-        - label: I confirm this is **not** a security vulnerability. Security issues go to [SECURITY.md](https://github.com/tessio/tessio/blob/main/SECURITY.md), not the public issue tracker.
+        - label: I confirm this is **not** a security vulnerability. Security issues go to [SECURITY.md](https://github.com/tessio-ai/tessio/blob/main/SECURITY.md), not the public issue tracker.
           required: true
 
   - type: checkboxes
