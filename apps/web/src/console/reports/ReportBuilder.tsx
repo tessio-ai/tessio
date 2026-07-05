@@ -158,11 +158,11 @@ function Preview({ definition, rows, isLoading, error, renderKey, measureLabel }
 
   let chart: ReactNode;
   if (isLoading) {
-    chart = <div className="rp-preview-loading"><Icon name="refresh" size={18} style={{ opacity: 0.4 }} /><span>Running…</span></div>;
+    chart = <div className="rpt-preview-loading"><Icon name="refresh" size={18} style={{ opacity: 0.4 }} /><span>Running…</span></div>;
   } else if (error) {
-    chart = <div className="rp-preview-error"><Icon name="alert" size={15} /><span>{error}</span></div>;
+    chart = <div className="rpt-preview-error"><Icon name="alert" size={15} /><span>{error}</span></div>;
   } else if (!rows) {
-    chart = <div className="rp-preview-empty">Configure the report to see a preview.</div>;
+    chart = <div className="rpt-preview-empty">Configure the report to see a preview.</div>;
   } else if (viz === 'bar') {
     chart = <BarChart rows={rows} renderKey={renderKey} label={measureLabel} />;
   } else if (viz === 'line') {
@@ -176,9 +176,9 @@ function Preview({ definition, rows, isLoading, error, renderKey, measureLabel }
   }
 
   return (
-    <div className="rp-preview">
-      <div className="rp-preview-title">Preview</div>
-      <div className="rp-preview-content">{chart}</div>
+    <div className="rpt-preview">
+      <div className="rpt-preview-title">Preview</div>
+      <div className="rpt-preview-content">{chart}</div>
     </div>
   );
 }
@@ -341,7 +341,7 @@ export function ReportBuilder({ reportId, go }: { reportId: string; go: Go }) {
   const isPending = updateReport.isPending;
 
   return (
-    <div className="rp-editor">
+    <div className="rpt-editor">
       {/* Toolbar */}
       <div className="wf-toolbar">
         <button
@@ -366,9 +366,9 @@ export function ReportBuilder({ reportId, go }: { reportId: string; go: Go }) {
       </div>
 
       {/* Body: config panel + preview */}
-      <div className="rp-body">
+      <div className="rpt-body">
         {/* Config panel */}
-        <div className="rp-panel">
+        <div className="rpt-panel">
           {/* Name + description */}
           <div className="wf-field">
             <label>Description</label>
@@ -543,11 +543,11 @@ export function ReportBuilder({ reportId, go }: { reportId: string; go: Go }) {
           {/* Visualization */}
           <div className="wf-field">
             <label>Visualization</label>
-            <div className="rp-viz-toggle">
+            <div className="rpt-viz-toggle">
               {(['bar', 'line', 'pie', 'table', 'number'] as const).map((v) => (
                 <button
                   key={v}
-                  className={'rp-viz-btn' + (definition.visualization === v ? ' active' : '')}
+                  className={'rpt-viz-btn' + (definition.visualization === v ? ' active' : '')}
                   onClick={() => patch({ visualization: v })}
                   title={v}
                 >
