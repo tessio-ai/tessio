@@ -24,15 +24,15 @@ function VizIcon({ viz }: { viz: string }) {
 
 function ReportCard({ report, onClick }: { report: ReportListItem; onClick: () => void }) {
   return (
-    <div className="rp-card" onClick={onClick}>
-      <div className="rp-card-icon">
+    <div className="rpt-card" onClick={onClick}>
+      <div className="rpt-card-icon">
         <VizIcon viz={report.visualization} />
       </div>
-      <div className="rp-card-body">
-        <div className="rp-card-name">{report.name}</div>
-        {report.description && <div className="rp-card-desc">{report.description}</div>}
+      <div className="rpt-card-body">
+        <div className="rpt-card-name">{report.name}</div>
+        {report.description && <div className="rpt-card-desc">{report.description}</div>}
       </div>
-      <div className="rp-card-meta">
+      <div className="rpt-card-meta">
         {new Date(report.updatedAt).toLocaleDateString()}
       </div>
     </div>
@@ -90,7 +90,7 @@ export function Reports({ go }: { go: Go }) {
           </div>
         )}
         {reports && reports.length > 0 && (
-          <div className="rp-list">
+          <div className="rpt-list">
             {reports.map((r) => (
               <ReportCard
                 key={r.id}
