@@ -1150,10 +1150,55 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
 .cat-row .field-check { white-space: nowrap; }
 
 .rp-mine { max-width: 720px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-.rp-mine-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); }
+.rp-mine-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); font: inherit; color: var(--foreground); cursor: pointer; text-align: left; }
+.rp-mine-row:hover { background: var(--muted); }
+.rp-mine-row:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .rm-title { font-weight: 600; }
 .rm-sub { font-size: var(--t-small); color: var(--muted-foreground); }
 .rm-status { font-size: var(--t-small); text-transform: capitalize; color: var(--muted-foreground); }
+
+/* ---- Requester ticket progress ---- */
+.rp-status-chip { flex: none; font-size: var(--t-caption); font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted-foreground); background: var(--muted); }
+.rp-status-chip[data-status='resolved'], .rp-status-chip[data-status='closed'] { color: var(--success); background: var(--success-tint); border-color: color-mix(in oklab, var(--success) 22%, transparent); }
+.rp-status-chip[data-status='in_progress'], .rp-status-chip[data-status='pending'], .rp-status-chip[data-status='on_hold'] { color: var(--warning); background: var(--warning-tint); border-color: color-mix(in oklab, var(--warning) 22%, transparent); }
+
+.rp-request { max-width: 720px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 18px; }
+.rp-request .rp-back { align-self: flex-start; }
+.rp-req-head { display: flex; align-items: flex-start; gap: 12px; }
+.rp-req-title { margin: 0; font-size: var(--t-h2); font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.rp-req-sub { font-size: var(--t-small); color: var(--muted-foreground); margin-top: 2px; }
+
+.rp-steps { display: flex; margin: 0; padding: 14px 16px; list-style: none; border: 1px solid var(--border); border-radius: 12px; background: var(--background); }
+.rp-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; color: var(--faint-foreground); font-size: var(--t-small); }
+.rp-step::before { content: ''; position: absolute; top: 10px; right: 50%; width: 100%; height: 2px; background: var(--border); }
+.rp-step:first-child::before { display: none; }
+.rp-step-dot { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--background); border: 2px solid var(--border); position: relative; z-index: 1; color: #fff; }
+.rp-step.done, .rp-step.current { color: var(--foreground); }
+.rp-step.done::before, .rp-step.current::before { background: var(--pa, var(--primary)); }
+.rp-step.done .rp-step-dot { background: var(--pa, var(--primary)); border-color: var(--pa, var(--primary)); }
+.rp-step.current .rp-step-dot { border-color: var(--pa, var(--primary)); }
+.rp-step.current .rp-step-dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--pa, var(--primary)); }
+.rp-step.current .rp-step-label { font-weight: 600; }
+
+.rp-timeline-wrap { border: 1px solid var(--border); border-radius: 12px; background: var(--background); padding: 16px; }
+.rp-timeline { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.rp-tl-item { display: flex; gap: 10px; position: relative; }
+.rp-tl-item:not(:last-child)::before { content: ''; position: absolute; left: 11px; top: 26px; bottom: -14px; width: 2px; background: var(--border); }
+.rp-tl-dot { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--muted); border: 1px solid var(--border); color: var(--muted-foreground); position: relative; z-index: 1; }
+.rp-tl-body { flex: 1; min-width: 0; padding-top: 2px; }
+.rp-tl-event { font-size: var(--t-small); font-weight: 600; }
+.rp-tl-meta { font-size: var(--t-caption); color: var(--muted-foreground); }
+.rp-tl-bubble { margin-top: 4px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--muted); font-size: var(--t-small); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rp-tl-comment.mine .rp-tl-dot { background: color-mix(in oklab, var(--pa, var(--primary)) 14%, var(--background)); color: var(--pa, var(--primary)); border-color: color-mix(in oklab, var(--pa, var(--primary)) 30%, transparent); }
+.rp-tl-comment.mine .rp-tl-bubble { background: color-mix(in oklab, var(--pa, var(--primary)) 8%, var(--background)); border-color: color-mix(in oklab, var(--pa, var(--primary)) 22%, transparent); }
+
+.rp-reply { display: flex; flex-direction: column; gap: 10px; }
+.rp-reply .portal-textarea { min-height: 84px; }
+.rp-reply-actions { display: flex; justify-content: flex-end; }
+.rp-closed-note { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--muted); color: var(--muted-foreground); font-size: var(--t-small); }
+.rp-closed-note .ps-btn { margin-left: auto; }
+
+@media (max-width: 560px) { .rp-step-label { display: none; } .rp-step.current .rp-step-label { display: block; position: absolute; top: 34px; white-space: nowrap; } .rp-steps { padding-bottom: 34px; } }
 .portal-bool { display: inline-flex; align-items: center; gap: 6px; }
 
 /* RelationshipGraph */

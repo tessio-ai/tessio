@@ -12,6 +12,8 @@ import { PortalHero } from './portal/PortalHero';
 import { PortalCatalogView } from './portal/PortalCatalogView';
 import { PortalKnowledge } from './portal/PortalKnowledge';
 import { PortalArticle } from './portal/PortalArticle';
+import { RequestProgress } from './portal/RequestProgress';
+import { statusLabel } from './portal/progress';
 import type { ResolvedField } from '../api/portal';
 
 function isEmpty(v: unknown): boolean {
@@ -23,6 +25,7 @@ type PortalView =
   | { kind: 'form'; key: string }
   | { kind: 'submitted'; key: string; ticketNumber: number | null }
   | { kind: 'mine' }
+  | { kind: 'request'; id: string }
   | { kind: 'kb' }
   | { kind: 'article'; id: string };
 
@@ -249,7 +252,7 @@ function Confirmation({ formKey, ticketNumber, onMine, onAnother }: { formKey: s
   );
 }
 
-function MyRequests() {
+function MyRequests({ onOpen }: { onOpen: (id: string) => void }) {
   const { data, isLoading, isError } = useMyTickets();
   if (isLoading) return <div className="rp-body"><p className="muted" style={{ padding: 24 }}>Loading…</p></div>;
   if (isError) return <div className="rp-body"><p className="danger" style={{ padding: 24 }}>Couldn't load your requests.</p></div>;
@@ -259,13 +262,14 @@ function MyRequests() {
     <div className="rp-body">
       <div className="rp-mine">
         {rows.map((t) => (
-          <div className="rp-mine-row" key={t.id}>
-            <div style={{ flex: 1, minWidth: 0 }}>
+          <button type="button" className="rp-mine-row" key={t.id} onClick={() => onOpen(t.id)}>
+            <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
               <div className="rm-title">{(t.data.title as string) || `Request #${t.number}`}</div>
               <div className="rm-sub">#{t.number} · {new Date(t.createdAt).toLocaleDateString()}</div>
             </div>
-            <span className="rm-status">{t.status ?? 'open'}</span>
-          </div>
+            <span className="rp-status-chip" data-status={t.status ?? 'open'}>{statusLabel(t.status)}</span>
+            <Icon name="chevronRight" size={16} style={{ color: 'var(--faint-foreground)' }} />
+          </button>
         ))}
       </div>
     </div>
@@ -293,7 +297,8 @@ export function RequesterPortal() {
       {view.kind === 'catalog' && <RequesterCatalog onOpenForm={(key) => setView({ kind: 'form', key })} />}
       {view.kind === 'form' && <div className="rp-body"><PublicIntakePage formKey={view.key} onBack={() => setView({ kind: 'catalog' })} onSubmitted={(n) => setView({ kind: 'submitted', key: view.key, ticketNumber: n })} /></div>}
       {view.kind === 'submitted' && <Confirmation formKey={view.key} ticketNumber={view.ticketNumber} onMine={() => setView({ kind: 'mine' })} onAnother={() => setView({ kind: 'catalog' })} />}
-      {view.kind === 'mine' && <MyRequests />}
+      {view.kind === 'mine' && <MyRequests onOpen={(id) => setView({ kind: 'request', id })} />}
+      {view.kind === 'request' && <RequestProgress ticketId={view.id} onBack={() => setView({ kind: 'mine' })} onNewRequest={() => setView({ kind: 'catalog' })} />}
       {view.kind === 'kb' && <PortalKnowledge onOpen={(id) => setView({ kind: 'article', id })} onBack={() => setView({ kind: 'catalog' })} />}
       {view.kind === 'article' && <PortalArticle id={view.id} onBack={() => setView({ kind: 'kb' })} onOpenForm={(key) => setView({ kind: 'form', key })} />}
     </div>
