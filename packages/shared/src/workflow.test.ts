@@ -11,6 +11,7 @@ function node(id: string, type: WorkflowNode['type'], config: Record<string, unk
     add_comment: { body: 'hi' },
     http_request: { method: 'GET', url: 'https://example.com' },
     script: { code: 'return 1;' },
+    slack_message: { text: 'hi' },
   };
   return {
     id,
@@ -148,6 +149,15 @@ describe('validateWorkflowGraph', () => {
     const errors = validateWorkflowGraph(g);
     expect(errors.some((e) => e.nodeId === 'h' && /URL/i.test(e.message))).toBe(true);
     expect(errors.some((e) => e.nodeId === 's' && /code/i.test(e.message))).toBe(true);
+  });
+
+  it('rejects a slack_message node with an empty message at publish time', () => {
+    const g = validGraph();
+    g.nodes.push(node('sl', 'slack_message', { text: '  ' }));
+    g.edges.push(edge('e7', 'u', 'sl'));
+    expect(workflowGraph.safeParse(g).success).toBe(true); // saveable draft
+    const errors = validateWorkflowGraph(g);
+    expect(errors.some((e) => e.nodeId === 'sl' && /message/i.test(e.message))).toBe(true);
   });
 });
 

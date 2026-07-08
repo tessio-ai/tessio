@@ -71,6 +71,11 @@ export const scriptConfig = z.object({
   timeoutMs: z.number().int().positive().max(SCRIPT_TIMEOUT_MAX_MS).optional(),
 });
 
+/** Posts to the org's connected Slack integration (Settings → Slack). */
+export const slackMessageConfig = z.object({
+  text: z.string(),
+});
+
 export const workflowNodeType = z.enum([
   'trigger',
   'branch',
@@ -79,6 +84,7 @@ export const workflowNodeType = z.enum([
   'add_comment',
   'http_request',
   'script',
+  'slack_message',
 ]);
 export type WorkflowNodeType = z.infer<typeof workflowNodeType>;
 
@@ -94,6 +100,7 @@ export const workflowNode = z.discriminatedUnion('type', [
   z.object({ ...nodeBase, type: z.literal('add_comment'), config: addCommentConfig }),
   z.object({ ...nodeBase, type: z.literal('http_request'), config: httpRequestConfig }),
   z.object({ ...nodeBase, type: z.literal('script'), config: scriptConfig }),
+  z.object({ ...nodeBase, type: z.literal('slack_message'), config: slackMessageConfig }),
 ]);
 export type WorkflowNode = z.infer<typeof workflowNode>;
 
@@ -199,6 +206,9 @@ export function validateWorkflowGraph(graph: WorkflowGraph): WorkflowGraphError[
     }
     if (n.type === 'script' && !n.config.code?.trim()) {
       errors.push({ nodeId: n.id, message: `Script step "${n.name ?? n.id}" has no code.` });
+    }
+    if (n.type === 'slack_message' && !n.config.text?.trim()) {
+      errors.push({ nodeId: n.id, message: `Slack step "${n.name ?? n.id}" has no message.` });
     }
   }
 

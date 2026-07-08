@@ -4,6 +4,7 @@ import {
   workflowsRepo,
   ticketsRepo,
   secretsRepo,
+  slackSettingsRepo,
   addComment,
   recordActivity,
   type Db,
@@ -14,6 +15,7 @@ import type { EngineDeps } from './engine';
 import type { ProcessEventDeps } from './process-event';
 import { applyTicketUpdate } from './ticket-actions';
 import { executeRun } from './engine';
+import { postSlackWebhook } from '../slack/send';
 
 /** POST a snippet to the runner service; 422 carries the script's own error. */
 export function runnerClient(baseUrl: string) {
@@ -84,6 +86,14 @@ function buildEngineDeps(db: Db, orgId: string, runnerUrl: string): EngineDeps {
       },
       fetchFn: fetch,
       runScript: runnerClient(runnerUrl),
+      sendSlack: async (text) => {
+        const row = await slackSettingsRepo(db).getOrCreate(orgId);
+        if (!row?.enabled || !row.webhookUrlCiphertext || !secretKey) {
+          throw new Error('Slack integration is not configured — connect it under Settings → Slack.');
+        }
+        const webhookUrl = decryptSecret(row.webhookUrlCiphertext, secretKey);
+        await postSlackWebhook(fetch, webhookUrl, { text });
+      },
     },
   };
 }

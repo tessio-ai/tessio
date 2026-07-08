@@ -32,6 +32,7 @@ import { registerOrgReadRoutes, registerOrgWriteRoutes } from './resources/org';
 import { registerWorkflowRoutes } from './resources/workflows';
 import { registerSecretsRoutes } from './resources/secrets';
 import { registerEmailSettingsRoutes } from './resources/email-settings';
+import { registerSlackSettingsRoutes } from './resources/slack-settings';
 import { registerSlaSettingsRoutes } from './resources/sla-settings';
 import { registerNotificationsRoutes } from './resources/notifications';
 import { registerMeRoutes } from './resources/me';
@@ -113,6 +114,7 @@ export function registerV1Routes(
     registerPortalSettingsRoutes(adminScope, db);
     registerAiSettingsRoutes(adminScope, db);
     registerEmailSettingsRoutes(adminScope, db);
+    registerSlackSettingsRoutes(adminScope, db);
     registerSlaSettingsRoutes(adminScope, db);
     // Enterprise admin routes (SSO settings, audit viewer) — only when an EE
     // plugin is loaded (paid editions); the plugin self-gates per feature.
