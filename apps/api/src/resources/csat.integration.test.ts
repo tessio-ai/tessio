@@ -2,16 +2,18 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { ticketsRepo, csatSettingsRepo, csatResponsesRepo } from '@tessio/db';
+import { ticketsRepo, csatSettingsRepo, csatResponsesRepo, listActivity } from '@tessio/db';
 import type { TestDb } from '@tessio/db/testing';
-import { buildTestApp, createTestDb, resetDb, seedOrgAndSchema, loginAs } from '../testing/harness';
+import { buildTestApp, createTestDb, resetDb, seedOrgAndSchema, loginAs, stubWorkflowProducers } from '../testing/harness';
 
 let app: FastifyInstance;
 let teardown: () => Promise<void>;
 let db: TestDb;
+let producers: ReturnType<typeof stubWorkflowProducers>;
 
 beforeAll(async () => {
-  ({ app, teardown } = buildTestApp());
+  producers = stubWorkflowProducers();
+  ({ app, teardown } = buildTestApp({ workflowProducers: producers }));
   db = createTestDb();
   await app.ready();
 });
@@ -21,6 +23,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await resetDb(db);
+  producers.publishedEvents.length = 0;
 });
 
 async function seedResolvedTicket(orgId: string, schemaId: string, schemaVersion: number, requesterId: string, status = 'resolved') {
@@ -67,6 +70,13 @@ describe('portal csat submit', () => {
     expect(res.statusCode).toBe(201);
     expect(res.json()).toMatchObject({ ticketId: ticket.id, rating: 4, comment: 'Quick fix, thanks!' });
     expect(res.json().respondedAt).toBeTruthy();
+
+    // the rating lands on the ticket timeline and fires a workflow event
+    const events = await listActivity(db, orgId, 'ticket', ticket.id);
+    expect(events.some((e) => e.eventType === 'csat_submitted' && (e.changes as { rating?: number })?.rating === 4)).toBe(true);
+    expect(producers.publishedEvents).toContainEqual(
+      expect.objectContaining({ orgId, eventType: 'csat_submitted', recordId: ticket.id }),
+    );
 
     // second attempt conflicts
     const again = await app.inject({

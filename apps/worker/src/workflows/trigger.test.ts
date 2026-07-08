@@ -21,6 +21,12 @@ describe('triggerMatches', () => {
     expect(triggerMatches({ events: ['field_changed'], fields: [] }, { eventType: 'field_changed', changes: { field: 'x' } }, ticket)).toBe(true);
   });
 
+  it('matches csat_submitted survey events', () => {
+    const config = { events: ['csat_submitted' as const] };
+    expect(triggerMatches(config, { eventType: 'csat_submitted', changes: { rating: 2, comment: 'slow' } }, ticket)).toBe(true);
+    expect(triggerMatches(config, { eventType: 'status' }, ticket)).toBe(false);
+  });
+
   it('evaluates the condition against the ticket', () => {
     const config = {
       events: ['status' as const],

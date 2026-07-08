@@ -19,7 +19,8 @@ export interface NotifyDeps {
 function snippetFor(eventType: string, changes?: Record<string, unknown>): string {
   if (eventType === 'commented') return 'You have a new reply.';
   if (eventType === 'assigned') return 'This ticket is now assigned to you.';
-  return changes?.status ? `Status is now "${String(changes.status)}".` : 'The ticket was updated.';
+  // Status events carry `changes: { from, to }` (see diffTicketActivity).
+  return changes?.to ? `Status is now "${String(changes.to)}".` : 'The ticket was updated.';
 }
 
 export async function processNotificationEvent(job: NotificationEventJob, deps: NotifyDeps): Promise<void> {

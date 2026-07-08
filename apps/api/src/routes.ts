@@ -64,7 +64,7 @@ export function registerV1Routes(
   registerPortalRoutes(app, db);
 
   // Satisfaction survey submit/read for the caller's own tickets (ownership-checked inside).
-  registerPortalCsatRoutes(app, db);
+  registerPortalCsatRoutes(app, db, workflowProducers);
 
   // Ticket comments are reachable by requesters (ownership-checked inside).
   registerCommentRoutes(app, db, 'tickets', 'ticket', workflowProducers);

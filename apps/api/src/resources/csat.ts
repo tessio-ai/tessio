@@ -4,10 +4,11 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { Db } from '@tessio/db';
-import { csatSettingsRepo, csatResponsesRepo, ticketsRepo } from '@tessio/db';
+import { csatSettingsRepo, csatResponsesRepo, ticketsRepo, recordActivity } from '@tessio/db';
 import { csatSettingsInput, csatSubmitBody, CSAT_TRIGGER_STATUSES } from '@tessio/shared';
 import { notFound, badRequest, conflict } from '../errors';
 import { recordAudit, safeMeta } from '../audit';
+import type { WorkflowProducers } from '../workflows/producer';
 
 const settingsResponse = z.object({
   enabled: z.boolean(),
@@ -62,7 +63,7 @@ export function registerCsatSettingsRoutes(app: FastifyInstance, db: Db): void {
 }
 
 /** Requester-facing survey routes (any authenticated role; ownership-checked). */
-export function registerPortalCsatRoutes(app: FastifyInstance, db: Db): void {
+export function registerPortalCsatRoutes(app: FastifyInstance, db: Db, workflows?: WorkflowProducers): void {
   const r = app.withTypeProvider<ZodTypeProvider>();
   const settings = csatSettingsRepo(db);
   const responses = csatResponsesRepo(db);
@@ -99,6 +100,15 @@ export function registerPortalCsatRoutes(app: FastifyInstance, db: Db): void {
       comment: req.body.comment?.trim() || null,
     });
     if (!row) throw conflict('this ticket has already been rated');
+    // Timeline entry + workflow trigger (e.g. "rating <= 2 → escalate").
+    await recordActivity(db, {
+      orgId: req.orgId, actorId: req.user.id, recordType: 'ticket', recordId: id,
+      eventType: 'csat_submitted', changes: { rating: row.rating },
+    });
+    void workflows?.publishEvent(db, req.orgId, {
+      eventType: 'csat_submitted', recordId: id,
+      changes: { rating: row.rating, comment: row.comment },
+    });
     reply.code(201);
     return present(row);
   });

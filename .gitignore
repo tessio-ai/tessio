@@ -17,3 +17,6 @@ coverage/
 # Local Claude Code agent config / project skills (not shipped)
 .claude/
 .impeccable/
+
+# Local dev Redis snapshots
+dump.rdb
