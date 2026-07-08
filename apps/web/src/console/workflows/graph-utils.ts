@@ -12,9 +12,10 @@ export const NODE_META: Record<WorkflowNodeType, { label: string; icon: string; 
   add_comment: { label: 'Add comment', icon: 'message', hue: '#2563eb', blurb: 'Post a comment or internal note' },
   http_request: { label: 'HTTP request', icon: 'globe', hue: '#7c3aed', blurb: 'Call an external API' },
   script: { label: 'Script', icon: 'code', hue: '#0d9488', blurb: 'Run JavaScript against the run context' },
+  slack_message: { label: 'Slack message', icon: 'send', hue: '#611f69', blurb: 'Post to the connected Slack channel' },
 };
 
-export const PALETTE: Exclude<WorkflowNodeType, 'trigger'>[] = ['branch', 'join', 'update_ticket', 'add_comment', 'http_request', 'script'];
+export const PALETTE: Exclude<WorkflowNodeType, 'trigger'>[] = ['branch', 'join', 'update_ticket', 'add_comment', 'slack_message', 'http_request', 'script'];
 
 const TRIGGER_EVENT_LABELS: Record<string, string> = {
   created: 'created',
@@ -66,6 +67,8 @@ export function summarize(node: WorkflowNode): string {
       return node.config.url ? `${node.config.method} ${node.config.url}` : 'Configure the request';
     case 'script':
       return node.config.code?.trim() ? firstLine(node.config.code) : 'Write some JavaScript';
+    case 'slack_message':
+      return node.config.text?.trim() ? firstLine(node.config.text) : 'Write a message';
   }
 }
 
@@ -88,6 +91,7 @@ const DEFAULT_CONFIGS: Record<Exclude<WorkflowNodeType, 'trigger'>, WorkflowNode
   add_comment: { body: '' },
   http_request: { method: 'GET', url: '' },
   script: { code: "// ctx = { trigger, ticket, nodes, run }\nreturn { ok: true };" },
+  slack_message: { text: '' },
 };
 
 export function createNode(type: Exclude<WorkflowNodeType, 'trigger'>, graph: WorkflowGraph, position: { x: number; y: number }): WorkflowNode {

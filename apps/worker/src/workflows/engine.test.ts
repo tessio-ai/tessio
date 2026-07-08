@@ -56,6 +56,7 @@ function makeDeps(exec: Partial<NodeExecDeps> = {}): { deps: EngineDeps; recorde
         throw new Error('no fetch in this test');
       }) as unknown as typeof fetch,
       runScript: async () => 1,
+      sendSlack: async () => {},
       ...exec,
     },
   };

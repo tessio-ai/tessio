@@ -21,6 +21,7 @@ import {
 import { TessAiSettings } from './TessAiSettings';
 import { SecretsSettings } from './SecretsSettings';
 import { EmailSettings } from './EmailSettings';
+import { SlackSettings } from './SlackSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { SlaSettings } from './SlaSettings';
 import { EeSsoSettings, EeAuditLog } from './ee-bridge';
@@ -35,6 +36,7 @@ const SET_SECTIONS = [
     { id: 'teams', label: 'Teams', icon: 'building' },
     { id: 'tess', label: 'Tess AI', icon: 'sparkles' },
     { id: 'email', label: 'Email', icon: 'mail' },
+    { id: 'slack', label: 'Slack', icon: 'send' },
     { id: 'sla', label: 'SLA', icon: 'clock' },
     { id: 'secrets', label: 'Secrets', icon: 'lock' },
     { id: 'agents', label: 'Endpoint agents', icon: 'laptop' },
@@ -81,6 +83,7 @@ export function Settings({ go, route }: { go: Go; route: Route }) {
   else if (section === 'teams') body = <TeamsSettings />;
   else if (section === 'tess') body = <TessAiSettings />;
   else if (section === 'email') body = <EmailSettings />;
+  else if (section === 'slack') body = <SlackSettings />;
   else if (section === 'sla') body = <SlaSettings />;
   else if (section === 'secrets') body = <SecretsSettings />;
   else if (section === 'agents') body = <EndpointAgentsSettings />;

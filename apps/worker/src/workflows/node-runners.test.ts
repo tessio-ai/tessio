@@ -19,6 +19,7 @@ function deps(overrides: Partial<NodeExecDeps> = {}): NodeExecDeps {
     addComment: vi.fn(async () => ({ commentId: 'c9' })),
     fetchFn: vi.fn() as unknown as typeof fetch,
     runScript: vi.fn(async () => ({ ok: 1 })),
+    sendSlack: vi.fn(async () => {}),
     ...overrides,
   };
 }
@@ -143,6 +144,22 @@ describe('executeNode', () => {
     const s = scope();
     const n = node('http_request', { method: 'GET', url: 'https://8.8.8.8/loop' });
     await expect(executeNode(n, prepareNodeInput(n, s), s, d)).rejects.toThrow(/Too many redirects/);
+  });
+
+  it('slack_message posts the interpolated text', async () => {
+    const d = deps();
+    const s = scope();
+    const n = node('slack_message', { text: 'Ticket {{ ticket.id }} is {{ ticket.priority }}' });
+    const { output } = await executeNode(n, prepareNodeInput(n, s), s, d);
+    expect(d.sendSlack).toHaveBeenCalledWith('Ticket tk1 is high');
+    expect(output).toEqual({ ok: true });
+  });
+
+  it('slack_message fails the node when the integration is not configured', async () => {
+    const d = deps({ sendSlack: vi.fn(async () => { throw new Error('Slack integration is not configured'); }) });
+    const s = scope();
+    const n = node('slack_message', { text: 'hello' });
+    await expect(executeNode(n, prepareNodeInput(n, s), s, d)).rejects.toThrow(/not configured/);
   });
 
   it('script passes ctx and returns the script output', async () => {

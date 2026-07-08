@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { PREF_FOR_TYPE, type NotificationEventJob, type NotificationPrefs } from '@tessio/shared';
+import {
+  PREF_FOR_TYPE,
+  buildSlackTicketMessage,
+  isSlackTicketEvent,
+  type NotificationEventJob,
+  type NotificationPrefs,
+  type SlackSendJob,
+  type SlackTicketEvent,
+} from '@tessio/shared';
 import { resolveRecipients } from './resolve';
 import { renderNotificationEmail } from '../email/templates';
 
@@ -13,6 +21,9 @@ export interface NotifyDeps {
   enqueueEmail(job: { orgId: string; to: string; subject: string; text: string; html: string; headers?: Record<string, string> }): Promise<void>;
   orgEmailEnabled(orgId: string): Promise<boolean>;
   fromDomain(orgId: string): Promise<string>;
+  /** Per-event Slack toggles, or null when the org's Slack integration is disabled. */
+  orgSlack(orgId: string): Promise<Record<SlackTicketEvent, boolean> | null>;
+  enqueueSlack(job: SlackSendJob): Promise<void>;
   siteUrl: string;
 }
 
@@ -25,6 +36,23 @@ function snippetFor(eventType: string, changes?: Record<string, unknown>): strin
 export async function processNotificationEvent(job: NotificationEventJob, deps: NotifyDeps): Promise<void> {
   const ticket = await deps.loadTicket(job.orgId, job.event.recordId);
   if (!ticket) return;
+
+  // Channel-level Slack post — independent of per-user recipients/prefs.
+  if (isSlackTicketEvent(job.event.eventType)) {
+    const slack = await deps.orgSlack(job.orgId);
+    if (slack?.[job.event.eventType]) {
+      const msg = buildSlackTicketMessage({
+        eventType: job.event.eventType,
+        number: ticket.number,
+        title: ticket.title,
+        url: `${deps.siteUrl}/#/tickets/${ticket.id}`,
+        changes: job.event.changes,
+        internal: job.event.internal ?? false,
+      });
+      await deps.enqueueSlack({ orgId: job.orgId, text: msg.text, blocks: msg.blocks });
+    }
+  }
+
   const recipients = resolveRecipients({
     eventType: job.event.eventType, actorId: job.event.actorId ?? null, internal: job.event.internal ?? false,
     requesterId: ticket.requesterId, assigneeId: ticket.assigneeId, changes: job.event.changes,
