@@ -99,8 +99,8 @@ describe('reportDefinition schema', () => {
 });
 
 describe('REPORT_MEASURES catalog', () => {
-  it('has 11 entries', () => {
-    expect(REPORT_MEASURES.length).toBe(11);
+  it('has 14 entries', () => {
+    expect(REPORT_MEASURES.length).toBe(14);
   });
 
   it('every measure has id, label, and fn', () => {

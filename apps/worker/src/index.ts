@@ -3,7 +3,7 @@
 import { loadEnv } from './load-env';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import { createDbClient, aiSettingsRepo, ticketsRepo, usersRepo, ticketAiTriageRepo, ticketEmbeddingsRepo, recordActivity, emailSettingsRepo, notificationsRepo } from '@tessio/db';
+import { createDbClient, aiSettingsRepo, ticketsRepo, usersRepo, ticketAiTriageRepo, ticketEmbeddingsRepo, recordActivity, emailSettingsRepo, notificationsRepo, csatSettingsRepo, csatResponsesRepo } from '@tessio/db';
 import {
   createTessClient,
   triageTicket,
@@ -38,6 +38,7 @@ import { Queue } from 'bullmq';
 import { processWorkflowEvent } from './workflows/process-event';
 import { buildProcessEventDeps, processRunJob } from './workflows/wire';
 import { processNotificationEvent, type NotifyDeps } from './notifications/process';
+import { processCsatSurvey, type CsatDeps } from './notifications/csat';
 import { processEmailSend, type SendDeps } from './email/send';
 import { createMailer } from './email/mailer';
 import { diskStorage } from './storage';
@@ -172,6 +173,23 @@ function buildNotifyDeps(emailQueue: Queue<EmailSendJob>): NotifyDeps {
   };
 }
 
+function buildCsatDeps(notify: NotifyDeps): CsatDeps {
+  return {
+    loadTicket: notify.loadTicket,
+    loadCsatSettings: async (orgId) => {
+      const row = await csatSettingsRepo(db).getOrCreate(orgId);
+      return { enabled: row?.enabled ?? false, question: row?.question ?? null };
+    },
+    createSurvey: async (input) => (await csatResponsesRepo(db).createSurvey(input)) !== null,
+    loadPrefs: notify.loadPrefs,
+    loadEmail: notify.loadEmail,
+    enqueueEmail: notify.enqueueEmail,
+    orgEmailEnabled: notify.orgEmailEnabled,
+    fromDomain: notify.fromDomain,
+    siteUrl: notify.siteUrl,
+  };
+}
+
 function buildSendDeps(): SendDeps {
   return {
     loadMailer: async (orgId) => {
@@ -210,7 +228,11 @@ const workflowRunsWorker = new Worker<WorkflowRunJobData>(
 );
 const notificationsWorker = new Worker<NotificationEventJob>(
   NOTIFICATIONS_QUEUE,
-  async (job) => processNotificationEvent(job.data, buildNotifyDeps(emailSendQueue)),
+  async (job) => {
+    const notify = buildNotifyDeps(emailSendQueue);
+    await processNotificationEvent(job.data, notify);
+    await processCsatSurvey(job.data, buildCsatDeps(notify));
+  },
   { connection },
 );
 const emailSendWorker = new Worker<EmailSendJob>(

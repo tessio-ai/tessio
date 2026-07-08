@@ -31,6 +31,8 @@ export * from './email-settings';
 export * from './notifications';
 export * from './processed-emails';
 export * from './sla-settings';
+export * from './csat-settings';
+export * from './csat-responses';
 export * from './sso-settings';
 export * from './audit-log';
 export * from './agent-enrollment-keys';

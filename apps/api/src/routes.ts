@@ -33,6 +33,7 @@ import { registerWorkflowRoutes } from './resources/workflows';
 import { registerSecretsRoutes } from './resources/secrets';
 import { registerEmailSettingsRoutes } from './resources/email-settings';
 import { registerSlaSettingsRoutes } from './resources/sla-settings';
+import { registerCsatSettingsRoutes, registerPortalCsatRoutes, registerTicketCsatRoutes } from './resources/csat';
 import { registerNotificationsRoutes } from './resources/notifications';
 import { registerMeRoutes } from './resources/me';
 import { registerEnrollmentKeysRoutes } from './agents/enrollment-keys-routes';
@@ -61,6 +62,9 @@ export function registerV1Routes(
 
   // Portal reads are reachable by any authenticated role (including requesters).
   registerPortalRoutes(app, db);
+
+  // Satisfaction survey submit/read for the caller's own tickets (ownership-checked inside).
+  registerPortalCsatRoutes(app, db);
 
   // Ticket comments are reachable by requesters (ownership-checked inside).
   registerCommentRoutes(app, db, 'tickets', 'ticket', workflowProducers);
@@ -93,6 +97,7 @@ export function registerV1Routes(
     registerAskRoutes(staff, db);
     registerDashboardRoutes(staff, db);
     registerReportRoutes(staff, db);
+    registerTicketCsatRoutes(staff, db);
 
     registerDevicesRoutes(staff, db);
 
@@ -114,6 +119,7 @@ export function registerV1Routes(
     registerAiSettingsRoutes(adminScope, db);
     registerEmailSettingsRoutes(adminScope, db);
     registerSlaSettingsRoutes(adminScope, db);
+    registerCsatSettingsRoutes(adminScope, db);
     // Enterprise admin routes (SSO settings, audit viewer) — only when an EE
     // plugin is loaded (paid editions); the plugin self-gates per feature.
     if (ee?.enterprise) ee.enterprise.registerAdmin?.(adminScope, ee.eeCtx);

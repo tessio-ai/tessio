@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { and, eq, gte, lt, isNull, sql, type SQL } from 'drizzle-orm';
-import { tickets, ticketAiTriage, teamSchemas, teamMembers } from '../schema';
+import { tickets, ticketAiTriage, csatResponses, teamSchemas, teamMembers } from '../schema';
 import { compileFilter, resolveFieldExpr } from './compile-filter';
 import type { ReportDefinition } from '@tessio/shared';
 import type { Db } from '../client';
@@ -70,6 +70,13 @@ function measureExpr(def: ReportDefinition): SQL {
       return sql`count(*) filter (where ${ticketAiTriage.confidence} < ${FLAGGED})::float8`;
     case 'pct_triaged':
       return sql`(100.0 * count(${ticketAiTriage.ticketId}) / nullif(count(*), 0))::float8`;
+    case 'avg_csat':
+      return sql`coalesce(avg(${csatResponses.rating}), 0)::float8`;
+    case 'count_csat_responses':
+      return sql`count(${csatResponses.rating})::float8`;
+    case 'pct_csat_responded':
+      // answered surveys over surveys sent (not over all tickets)
+      return sql`(100.0 * count(${csatResponses.rating}) / nullif(count(${csatResponses.id}), 0))::float8`;
     default: {
       if (/^data\.[a-zA-Z0-9_]+$/.test(id) && def.measure.fn) {
         const fn = def.measure.fn; // 'avg' | 'sum' | 'min' | 'max' (zod-enum — safe to raw)
@@ -105,6 +112,8 @@ function dimensionExpr(field: string, bucket?: 'day' | 'week' | 'month'): SQL {
       return sql`${ticketAiTriage.category}`;
     case 'ai.priority':
       return sql`${ticketAiTriage.priority}`;
+    case 'csat.rating':
+      return sql`${csatResponses.rating}::text`;
     case 'createdAt':
       return sql`to_char(date_trunc(${b}, ${tickets.createdAt}), 'YYYY-MM-DD')`;
     case 'resolvedAt':
@@ -204,6 +213,7 @@ export async function runReport(
       .select({ value })
       .from(tickets)
       .leftJoin(ticketAiTriage, eq(ticketAiTriage.ticketId, tickets.id))
+      .leftJoin(csatResponses, eq(csatResponses.ticketId, tickets.id))
       .where(where);
     return { rows: [{ key: null, value: Number(row?.value ?? 0) }] };
   }
@@ -216,6 +226,7 @@ export async function runReport(
     .select({ key: sql<string | null>`${dim}`, value })
     .from(tickets)
     .leftJoin(ticketAiTriage, eq(ticketAiTriage.ticketId, tickets.id))
+    .leftJoin(csatResponses, eq(csatResponses.ticketId, tickets.id))
     .where(where)
     // Positional GROUP BY/ORDER BY: the dimension is select column 1, the measure column 2.
     // We must NOT use .groupBy(dim) here — Drizzle emits the bare column (not the

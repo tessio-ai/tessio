@@ -23,6 +23,7 @@ import { SecretsSettings } from './SecretsSettings';
 import { EmailSettings } from './EmailSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { SlaSettings } from './SlaSettings';
+import { CsatSettings } from './CsatSettings';
 import { EeSsoSettings, EeAuditLog } from './ee-bridge';
 import { EndpointAgentsSettings } from './EndpointAgentsSettings';
 
@@ -36,6 +37,7 @@ const SET_SECTIONS = [
     { id: 'tess', label: 'Tess AI', icon: 'sparkles' },
     { id: 'email', label: 'Email', icon: 'mail' },
     { id: 'sla', label: 'SLA', icon: 'clock' },
+    { id: 'csat', label: 'Satisfaction', icon: 'star' },
     { id: 'secrets', label: 'Secrets', icon: 'lock' },
     { id: 'agents', label: 'Endpoint agents', icon: 'laptop' },
     { id: 'sso', label: 'Single sign-on', icon: 'shieldCheck' },
@@ -82,6 +84,7 @@ export function Settings({ go, route }: { go: Go; route: Route }) {
   else if (section === 'tess') body = <TessAiSettings />;
   else if (section === 'email') body = <EmailSettings />;
   else if (section === 'sla') body = <SlaSettings />;
+  else if (section === 'csat') body = <CsatSettings />;
   else if (section === 'secrets') body = <SecretsSettings />;
   else if (section === 'agents') body = <EndpointAgentsSettings />;
   else if (section === 'sso') body = ssoOn ? <EeSsoSettings /> : <BrandingSettings />;

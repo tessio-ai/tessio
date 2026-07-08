@@ -12,6 +12,7 @@ import { listSecrets, createSecret, replaceSecret, deleteSecret } from '../../ap
 import { getEmailSettings, putEmailSettings, testSmtp, type UpdateEmailSettingsInput } from '../../api/email';
 import { getNotificationPrefs, putNotificationPrefs, type NotificationPrefs } from '../../api/notifications';
 import { getSlaSettings, putSlaSettings, type UpdateSlaSettingsInput } from '../../api/sla';
+import { getCsatSettings, putCsatSettings, type UpdateCsatSettingsInput } from '../../api/csat';
 import { getEntitlements } from '../../api/entitlements';
 
 export const useOrg = () => useQuery({ queryKey: ['org'], queryFn: getOrg });
@@ -161,6 +162,16 @@ export function useUpdateSlaSettings() {
   return useMutation({
     mutationFn: (body: UpdateSlaSettingsInput) => putSlaSettings(body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sla-settings'] }),
+  });
+}
+
+export const useCsatSettings = () => useQuery({ queryKey: ['csat-settings'], queryFn: getCsatSettings });
+
+export function useUpdateCsatSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateCsatSettingsInput) => putCsatSettings(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['csat-settings'] }),
   });
 }
 

@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import { RequesterPortal } from '../portal';
 import * as portalApi from '../../api/portal';
 import * as ticketsApi from '../../api/tickets';
+import * as csatApi from '../../api/csat';
 import * as authCtx from '../../auth/AuthContext';
 
 function wrap(node: ReactNode) {
@@ -35,6 +36,39 @@ describe('RequesterPortal', () => {
     await userEvent.click(await screen.findByText(/my requests/i));
     await waitFor(() => expect(screen.getByText('Printer')).toBeInTheDocument());
     expect(screen.getByText(/#7/)).toBeInTheDocument();
+  });
+
+  it('shows a satisfaction prompt on resolved tickets and submits a rating', async () => {
+    vi.spyOn(ticketsApi, 'queryTickets').mockResolvedValue({ rows: [{ id: 't1', number: 7, status: 'resolved', priority: null, requesterId: 'u1', assigneeId: null, teamId: null, dueAt: null, schemaId: 's1', schemaVersion: 1, data: { title: 'Printer' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), formId: 'f1' }], nextCursor: null } as never);
+    vi.spyOn(csatApi, 'getMyCsat').mockResolvedValue({ enabled: true, question: 'Happy with the fix?', responses: [] });
+    const submit = vi.spyOn(csatApi, 'submitCsat').mockResolvedValue({ ticketId: 't1', rating: 4, comment: null, sentAt: '', respondedAt: new Date().toISOString() });
+
+    render(wrap(<RequesterPortal />));
+    await userEvent.click(await screen.findByText(/my requests/i));
+    await waitFor(() => expect(screen.getByText('Happy with the fix?')).toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole('radio', { name: '4 of 5' }));
+    await userEvent.click(screen.getByRole('button', { name: /send feedback/i }));
+    await waitFor(() => expect(submit).toHaveBeenCalledWith('t1', 4, undefined));
+  });
+
+  it('shows the thanks state instead of the prompt once rated', async () => {
+    vi.spyOn(ticketsApi, 'queryTickets').mockResolvedValue({ rows: [{ id: 't1', number: 7, status: 'closed', priority: null, requesterId: 'u1', assigneeId: null, teamId: null, dueAt: null, schemaId: 's1', schemaVersion: 1, data: { title: 'Printer' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), formId: 'f1' }], nextCursor: null } as never);
+    vi.spyOn(csatApi, 'getMyCsat').mockResolvedValue({ enabled: true, question: null, responses: [{ ticketId: 't1', rating: 5, comment: 'great', sentAt: '', respondedAt: new Date().toISOString() }] });
+
+    render(wrap(<RequesterPortal />));
+    await userEvent.click(await screen.findByText(/my requests/i));
+    await waitFor(() => expect(screen.getByText(/you rated this 5\/5/i)).toBeInTheDocument());
+  });
+
+  it('shows no satisfaction prompt when surveys are disabled', async () => {
+    vi.spyOn(ticketsApi, 'queryTickets').mockResolvedValue({ rows: [{ id: 't1', number: 7, status: 'resolved', priority: null, requesterId: 'u1', assigneeId: null, teamId: null, dueAt: null, schemaId: 's1', schemaVersion: 1, data: { title: 'Printer' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), formId: 'f1' }], nextCursor: null } as never);
+    vi.spyOn(csatApi, 'getMyCsat').mockResolvedValue({ enabled: false, question: null, responses: [] });
+
+    render(wrap(<RequesterPortal />));
+    await userEvent.click(await screen.findByText(/my requests/i));
+    await waitFor(() => expect(screen.getByText('Printer')).toBeInTheDocument());
+    expect(screen.queryByRole('radiogroup', { name: /rating/i })).not.toBeInTheDocument();
   });
 
   it('renders the spotlight hero by default', async () => {

@@ -19,6 +19,7 @@ import { listTicketActivity } from '../../api/activity';
 import { listTicketAttachments, uploadTicketAttachment, deleteAttachment } from '../../api/attachments';
 import { listSchemas } from '../../api/schemas';
 import { getTicketTriage, runTicketTriage, getSimilarTickets } from '../../api/ai';
+import { getTicketCsat } from '../../api/csat';
 
 export const useTickets = (q: TicketQuery, opts?: { enabled?: boolean }) =>
   useQuery({
@@ -153,6 +154,9 @@ export function useRunTicketTriage(ticketId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ticket-triage', ticketId] }),
   });
 }
+
+export const useTicketCsat = (ticketId: string | undefined) =>
+  useQuery({ queryKey: ['ticket-csat', ticketId], queryFn: () => getTicketCsat(ticketId as string), enabled: !!ticketId });
 
 export const useSimilarTickets = (ticketId: string | undefined, enabled: boolean) =>
   useQuery({
