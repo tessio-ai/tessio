@@ -253,16 +253,23 @@ function Confirmation({ formKey, ticketNumber, onMine, onAnother }: { formKey: s
 }
 
 function MyRequests({ onOpen }: { onOpen: (id: string) => void }) {
+  const { data: settings } = usePublicPortalSettings();
   const { data, isLoading, isError } = useMyTickets();
+  const accent = { ['--pa']: settings?.accent ?? '#4f46e5' } as CSSProperties;
   if (isLoading) return <div className="rp-body"><p className="muted" style={{ padding: 24 }}>Loading…</p></div>;
   if (isError) return <div className="rp-body"><p className="danger" style={{ padding: 24 }}>Couldn't load your requests.</p></div>;
   const rows = data?.rows ?? [];
   if (!rows.length) return <div className="rp-body"><p className="muted" style={{ padding: 24 }}>You haven't submitted any requests yet.</p></div>;
   return (
     <div className="rp-body">
-      <div className="rp-mine">
+      <div className="rp-mine" style={accent}>
+        <div className="rp-mine-head">
+          <h2>Your requests</h2>
+          <span className="rp-mine-count">{rows.length}</span>
+        </div>
         {rows.map((t) => (
           <button type="button" className="rp-mine-row" key={t.id} onClick={() => onOpen(t.id)}>
+            <span className="rm-ico" aria-hidden="true"><Icon name="ticket" size={17} /></span>
             <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
               <div className="rm-title">{(t.data.title as string) || `Request #${t.number}`}</div>
               <div className="rm-sub">#{t.number} · {new Date(t.createdAt).toLocaleDateString()}</div>

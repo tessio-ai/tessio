@@ -24,26 +24,26 @@ function ProgressSteps({ status }: { status: string | null }) {
   );
 }
 
-function TimelineItem({ entry, mine }: { entry: TimelineEntry; mine: boolean }) {
+function TimelineItem({ entry, mine, initials }: { entry: TimelineEntry; mine: boolean; initials: string }) {
   if (entry.kind === 'comment') {
     return (
-      <li className={'rp-tl-item rp-tl-comment' + (mine ? ' mine' : '')}>
-        <span className="rp-tl-dot" aria-hidden="true"><Icon name="message" size={12} /></span>
-        <div className="rp-tl-body">
-          <div className="rp-tl-meta"><b>{mine ? 'You' : 'Support team'}</b> · {fmtTime(entry.at)}</div>
-          <div className="rp-tl-bubble">{entry.body}</div>
+      <li className={'rp-msg' + (mine ? ' mine' : '')}>
+        <span className="rp-msg-ava" aria-hidden="true">{mine ? initials : <Icon name="user" size={14} />}</span>
+        <div className="rp-msg-main">
+          <div className="rp-msg-meta"><b>{mine ? 'You' : 'Support team'}</b><span>{fmtTime(entry.at)}</span></div>
+          <div className="rp-msg-bubble">{entry.body}</div>
         </div>
       </li>
     );
   }
   const text = entry.kind === 'created' ? 'Request submitted' : `Status changed to ${statusLabel(entry.to)}`;
   return (
-    <li className="rp-tl-item">
-      <span className="rp-tl-dot" aria-hidden="true"><Icon name={entry.kind === 'created' ? 'ticket' : 'activity'} size={12} /></span>
-      <div className="rp-tl-body">
-        <div className="rp-tl-event">{text}</div>
-        <div className="rp-tl-meta">{fmtTime(entry.at)}</div>
-      </div>
+    <li className="rp-tl-sys">
+      <span className="rp-tl-sys-pill">
+        <Icon name={entry.kind === 'created' ? 'ticket' : 'activity'} size={11} />
+        {text}
+        <span className="rp-tl-sys-time">{fmtTime(entry.at)}</span>
+      </span>
     </li>
   );
 }
@@ -72,6 +72,7 @@ export function RequestProgress({ ticketId, onBack, onNewRequest }: { ticketId: 
   const title = (t.data.title as string) || `Request #${t.number ?? '—'}`;
   const timeline = buildTimeline(activityQ.data ?? [], commentsQ.data ?? []);
   const closed = t.status === 'closed';
+  const initials = (user?.name ?? '').split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase() || 'U';
 
   async function onSend() {
     const body = draft.trim();
@@ -88,11 +89,11 @@ export function RequestProgress({ ticketId, onBack, onNewRequest }: { ticketId: 
         <button type="button" className="rp-back" onClick={onBack}><Icon name="arrowLeft" size={16} />My requests</button>
 
         <div className="rp-req-head">
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="rp-req-headline">
             <h2 className="rp-req-title">{title}</h2>
-            <div className="rp-req-sub">#{t.number ?? '—'} · submitted {fmtDate(t.createdAt)}</div>
+            <span className="rp-status-chip" data-status={t.status ?? 'open'}>{statusLabel(t.status)}</span>
           </div>
-          <span className="rp-status-chip" data-status={t.status ?? 'open'}>{statusLabel(t.status)}</span>
+          <div className="rp-req-sub">#{t.number ?? '—'} · submitted {fmtDate(t.createdAt)}</div>
         </div>
 
         <ProgressSteps status={t.status} />
@@ -102,30 +103,31 @@ export function RequestProgress({ ticketId, onBack, onNewRequest }: { ticketId: 
             <p className="muted">Loading activity…</p>
           ) : (
             <ol className="rp-timeline">
-              {timeline.map((e) => <TimelineItem key={`${e.kind}:${e.id}`} entry={e} mine={e.kind === 'comment' && e.authorId === user?.id} />)}
+              {timeline.map((e) => <TimelineItem key={`${e.kind}:${e.id}`} entry={e} mine={e.kind === 'comment' && e.authorId === user?.id} initials={initials} />)}
             </ol>
           )}
         </section>
 
         {closed ? (
           <div className="rp-closed-note">
-            <Icon name="lock" size={14} />
+            <span className="rp-closed-ico" aria-hidden="true"><Icon name="checkCircle" size={16} /></span>
             <span>This request is closed. Need more help?</span>
-            <button type="button" className="ps-btn" onClick={onNewRequest}>Submit a new request</button>
+            <button type="button" className="ps-btn rp-closed-cta" onClick={onNewRequest}>Submit a new request</button>
           </div>
         ) : (
           <div className="rp-reply">
             <label className="sr-only" htmlFor="rp-reply-input">Reply to the support team</label>
             <textarea
               id="rp-reply-input"
-              className="portal-textarea"
+              className="rp-reply-input"
               placeholder="Add a reply for the support team…"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
             />
             {reply.isError && <div className="portal-alert" role="alert">Couldn't send your reply. Please try again.</div>}
-            <div className="rp-reply-actions">
-              <button type="button" className="ps-btn primary" onClick={() => void onSend()} disabled={reply.isPending || !draft.trim()}>
+            <div className="rp-reply-bar">
+              <span className="rp-reply-hint"><Icon name="lock" size={12} />Visible to you and the support team</span>
+              <button type="button" className="rp-send" onClick={() => void onSend()} disabled={reply.isPending || !draft.trim()}>
                 <Icon name="send" size={14} />{reply.isPending ? 'Sending…' : 'Send reply'}
               </button>
             </div>
