@@ -8,6 +8,8 @@ import type { ReactNode } from 'react';
 import { RequesterPortal } from '../portal';
 import * as portalApi from '../../api/portal';
 import * as ticketsApi from '../../api/tickets';
+import * as activityApi from '../../api/activity';
+import * as commentsApi from '../../api/comments';
 import * as authCtx from '../../auth/AuthContext';
 
 function wrap(node: ReactNode) {
@@ -35,6 +37,18 @@ describe('RequesterPortal', () => {
     await userEvent.click(await screen.findByText(/my requests/i));
     await waitFor(() => expect(screen.getByText('Printer')).toBeInTheDocument());
     expect(screen.getByText(/#7/)).toBeInTheDocument();
+  });
+
+  it('opens a request from My requests and shows its progress', async () => {
+    vi.spyOn(ticketsApi, 'queryTickets').mockResolvedValue({ rows: [{ id: 't1', number: 7, status: 'in_progress', priority: null, requesterId: 'u1', assigneeId: null, teamId: null, dueAt: null, schemaId: 's1', schemaVersion: 1, data: { title: 'Printer' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), formId: 'f1' }], nextCursor: null } as never);
+    vi.spyOn(ticketsApi, 'getTicket').mockResolvedValue({ id: 't1', number: 7, status: 'in_progress', priority: null, requesterId: 'u1', assigneeId: null, teamId: null, dueAt: null, schemaId: 's1', schemaVersion: 1, data: { title: 'Printer' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), formId: 'f1' } as never);
+    vi.spyOn(activityApi, 'listTicketActivity').mockResolvedValue([{ id: 'a1', actorId: 'u1', eventType: 'created', changes: null, createdAt: new Date().toISOString() }]);
+    vi.spyOn(commentsApi, 'listTicketComments').mockResolvedValue([]);
+    render(wrap(<RequesterPortal />));
+    await userEvent.click(await screen.findByText(/my requests/i));
+    await userEvent.click(await screen.findByText('Printer'));
+    await waitFor(() => expect(screen.getByRole('list', { name: /request progress/i })).toBeInTheDocument());
+    expect(screen.getByText('Request submitted')).toBeInTheDocument();
   });
 
   it('renders the spotlight hero by default', async () => {
