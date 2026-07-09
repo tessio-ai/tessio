@@ -32,6 +32,38 @@ describe('teams resource', () => {
     expect((await ticketsRepo(db).getById(orgId, ticket.id))?.teamId).toBeNull();
   });
 
+  it('admin can set and clear a team email address', async () => {
+    const { orgId } = await seedOrgAndSchema(db, 'ticket');
+    const { cookie } = await loginAs(app, db, { orgId, role: 'admin' });
+    const team = (await app.inject({ method: 'POST', url: '/api/v1/teams', headers: { cookie }, payload: { name: 'HR' } })).json();
+    expect(team.emailAddress).toBeNull();
+    const updated = await app.inject({ method: 'PATCH', url: `/api/v1/teams/${team.id}`, headers: { cookie }, payload: { emailAddress: 'HR@Example.com', emailName: 'HR Desk' } });
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().emailAddress).toBe('hr@example.com'); // stored lowercased
+    expect(updated.json().emailName).toBe('HR Desk');
+    const cleared = await app.inject({ method: 'PATCH', url: `/api/v1/teams/${team.id}`, headers: { cookie }, payload: { emailAddress: null, emailName: null } });
+    expect(cleared.json().emailAddress).toBeNull();
+    expect(cleared.json().emailName).toBeNull();
+  });
+
+  it('rejects an email address already used by another team with 409', async () => {
+    const { orgId } = await seedOrgAndSchema(db, 'ticket');
+    const { cookie } = await loginAs(app, db, { orgId, role: 'admin' });
+    const hr = (await app.inject({ method: 'POST', url: '/api/v1/teams', headers: { cookie }, payload: { name: 'HR' } })).json();
+    const it_ = (await app.inject({ method: 'POST', url: '/api/v1/teams', headers: { cookie }, payload: { name: 'IT' } })).json();
+    await app.inject({ method: 'PATCH', url: `/api/v1/teams/${hr.id}`, headers: { cookie }, payload: { emailAddress: 'hr@example.com' } });
+    const dup = await app.inject({ method: 'PATCH', url: `/api/v1/teams/${it_.id}`, headers: { cookie }, payload: { emailAddress: 'HR@example.com' } });
+    expect(dup.statusCode).toBe(409);
+  });
+
+  it('rejects an invalid team email address with 400', async () => {
+    const { orgId } = await seedOrgAndSchema(db, 'ticket');
+    const { cookie } = await loginAs(app, db, { orgId, role: 'admin' });
+    const team = (await app.inject({ method: 'POST', url: '/api/v1/teams', headers: { cookie }, payload: { name: 'HR' } })).json();
+    const bad = await app.inject({ method: 'PATCH', url: `/api/v1/teams/${team.id}`, headers: { cookie }, payload: { emailAddress: 'not-an-email' } });
+    expect(bad.statusCode).toBe(400);
+  });
+
   it('rejects a duplicate team name with 409', async () => {
     const { orgId } = await seedOrgAndSchema(db, 'ticket');
     const { cookie } = await loginAs(app, db, { orgId, role: 'admin' });

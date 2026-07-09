@@ -5,7 +5,7 @@ import { processNotificationEvent, type NotifyDeps } from './process';
 
 function deps(over: Partial<NotifyDeps> = {}): NotifyDeps {
   return {
-    loadTicket: vi.fn(async () => ({ id: 't1', number: 7, title: 'Printer', requesterId: 'req-1', assigneeId: 'agent-2' })),
+    loadTicket: vi.fn(async () => ({ id: 't1', number: 7, title: 'Printer', requesterId: 'req-1', assigneeId: 'agent-2', teamId: null })),
     loadPrefs: vi.fn(async () => ({ 'req-1': { emailEnabled: true, assigned: true, replies: true, statusChanges: true } })),
     loadEmail: vi.fn(async (id: string) => (id === 'req-1' ? 'req@x.com' : null)),
     createNotifications: vi.fn(async () => {}),
@@ -24,6 +24,15 @@ it('writes a feed row and enqueues an email for a public reply', async () => {
   await processNotificationEvent({ orgId: 'o1', event: { eventType: 'commented', recordId: 't1', actorId: 'agent-2', internal: false } }, d);
   expect(d.createNotifications).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ userId: 'req-1', type: 'reply' })]));
   expect(d.enqueueEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'req@x.com', orgId: 'o1' }));
+});
+
+it("stamps the ticket's team on the email job and resolves the from-domain per team", async () => {
+  const d = deps({
+    loadTicket: vi.fn(async () => ({ id: 't1', number: 7, title: 'Printer', requesterId: 'req-1', assigneeId: 'agent-2', teamId: 'team-hr' })),
+  });
+  await processNotificationEvent({ orgId: 'o1', event: { eventType: 'commented', recordId: 't1', actorId: 'agent-2', internal: false } }, d);
+  expect(d.fromDomain).toHaveBeenCalledWith('o1', 'team-hr');
+  expect(d.enqueueEmail).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-hr' }));
 });
 
 it('does not email when the recipient pref is off (but still writes the feed row)', async () => {
@@ -55,7 +64,7 @@ it('posts to Slack even when there are no per-user recipients', async () => {
   // A ticket created by its own requester notifies nobody individually, but the channel still hears about it.
   const d = deps({
     orgSlack: vi.fn(async () => SLACK_ALL),
-    loadTicket: vi.fn(async () => ({ id: 't1', number: 7, title: 'Printer', requesterId: 'req-1', assigneeId: null })),
+    loadTicket: vi.fn(async () => ({ id: 't1', number: 7, title: 'Printer', requesterId: 'req-1', assigneeId: null, teamId: null })),
   });
   await processNotificationEvent({ orgId: 'o1', event: { eventType: 'created', recordId: 't1', actorId: 'req-1' } }, d);
   expect(d.enqueueSlack).toHaveBeenCalled();

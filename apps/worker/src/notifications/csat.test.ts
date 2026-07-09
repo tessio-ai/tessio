@@ -5,7 +5,7 @@ import { processCsatSurvey, type CsatDeps } from './csat';
 
 function deps(over: Partial<CsatDeps> = {}): CsatDeps {
   return {
-    loadTicket: vi.fn(async () => ({ id: 't1', number: 7, title: 'Printer', requesterId: 'req-1', assigneeId: 'agent-2' })),
+    loadTicket: vi.fn(async () => ({ id: 't1', number: 7, title: 'Printer', requesterId: 'req-1', assigneeId: 'agent-2', teamId: null })),
     loadCsatSettings: vi.fn(async () => ({ enabled: true, question: null })),
     createSurvey: vi.fn(async () => true),
     loadPrefs: vi.fn(async () => ({ 'req-1': { emailEnabled: true, assigned: true, replies: true, statusChanges: true } })),
@@ -80,7 +80,7 @@ it('respects the requester email-disabled preference', async () => {
 });
 
 it('does nothing when the ticket has no requester', async () => {
-  const d = deps({ loadTicket: vi.fn(async () => ({ id: 't1', number: 7, title: 'Printer', requesterId: null, assigneeId: 'agent-2' })) });
+  const d = deps({ loadTicket: vi.fn(async () => ({ id: 't1', number: 7, title: 'Printer', requesterId: null, assigneeId: 'agent-2', teamId: null })) });
   await processCsatSurvey(resolvedEvent(), d);
   expect(d.createSurvey).not.toHaveBeenCalled();
 });

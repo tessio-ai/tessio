@@ -52,7 +52,9 @@ export async function processCsatSurvey(job: NotificationEventJob, deps: CsatDep
   const to = await deps.loadEmail(ticket.requesterId);
   if (!to) return;
 
-  const domain = await deps.fromDomain(job.orgId);
+  // Route through the ticket's team so the survey email uses the team's
+  // from-address/domain when per-team email is configured (falls back to org).
+  const domain = await deps.fromDomain(job.orgId, ticket.teamId);
   const m = renderCsatEmail({ question: settings.question }, { ticket, fromDomain: domain, siteUrl: deps.siteUrl });
-  await deps.enqueueEmail({ orgId: job.orgId, to, subject: m.subject, text: m.text, html: m.html, headers: { 'Message-ID': m.messageId } });
+  await deps.enqueueEmail({ orgId: job.orgId, teamId: ticket.teamId, to, subject: m.subject, text: m.text, html: m.html, headers: { 'Message-ID': m.messageId } });
 }

@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '../ui';
+import { Icon } from '../icons';
 import { useEmailSettings, useUpdateEmailSettings, useTestSmtp } from './queries';
 import { useTicketSchemas, useTeams } from '../tickets/queries';
 import type { UpdateEmailSettingsInput } from '../../api/email';
 
-interface Draft {
+export interface Draft {
   enabled: boolean;
   smtpHost: string;
   smtpPort: string;
@@ -28,6 +29,25 @@ interface Draft {
   defaultTeamId: string;
 }
 
+/** Google (Gmail / Workspace) mail-server settings. Gmail requires an App Password
+ *  (with 2-Step Verification on) rather than the account password, so this preset only
+ *  fills the connection fields — the address and password stay for the user to enter. */
+export const GOOGLE_APP_PASSWORD_URL = 'https://myaccount.google.com/apppasswords';
+export function applyGmailPreset(draft: Draft): Draft {
+  return {
+    ...draft,
+    smtpHost: 'smtp.gmail.com',
+    smtpPort: '465',
+    smtpSecure: true,
+    smtpUser: draft.smtpUser || draft.fromAddress,
+    imapHost: 'imap.gmail.com',
+    imapPort: '993',
+    imapSecure: true,
+    imapUser: draft.imapUser || draft.fromAddress,
+    mailbox: draft.mailbox || 'INBOX',
+  };
+}
+
 export function EmailSettings() {
   const { data } = useEmailSettings();
   const update = useUpdateEmailSettings();
@@ -37,6 +57,7 @@ export function EmailSettings() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [saveResult, setSaveResult] = useState<string | null>(null);
+  const [presetNote, setPresetNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (data && !draft) {
@@ -108,10 +129,34 @@ export function EmailSettings() {
     });
   };
 
+  const onUseGmail = () => {
+    setDraft((prev) => (prev ? applyGmailPreset(prev) : prev));
+    setPresetNote('Filled in Google mail server settings. Enter your Google email address and an App Password below, then Save changes.');
+  };
+
   return (
     <>
       <h1 className="set-h">Email</h1>
       <p className="set-h-desc">Configure outbound (SMTP) and inbound (IMAP) email for notifications and ticket creation from email.</p>
+
+      <div className="set-card" style={{ marginBottom: 16 }}>
+        <div className="set-card-body" style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <div className="sr-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="zap" size={15} />Connect Google (Gmail / Workspace)</div>
+            <div className="sr-hint">
+              Auto-fill Google's SMTP and IMAP server settings below. You'll still add your Google address and a{' '}
+              <a href={GOOGLE_APP_PASSWORD_URL} target="_blank" rel="noreferrer">App Password</a>{' '}
+              (2-Step Verification must be on), then Save changes.
+            </div>
+          </div>
+          <Button variant="outline" icon="mail" onClick={onUseGmail}>Use Google settings</Button>
+        </div>
+        {presetNote && (
+          <div className="set-card-foot">
+            <span className="sf-note"><Icon name="check" size={13} /> {presetNote}</span>
+          </div>
+        )}
+      </div>
 
       <div className="set-card">
         <div className="set-card-head"><div className="set-card-title">Outbound (SMTP)</div><div className="set-card-sub">Used to send ticket notifications and replies.</div></div>

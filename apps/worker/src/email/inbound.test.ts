@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { decideInbound, type ParsedEmail } from './inbound';
 
 const base: ParsedEmail = {
-  messageId: '<m1@ext>', from: 'user@acme.com', subject: 'Help', text: 'hi',
+  messageId: '<m1@ext>', from: 'user@acme.com', recipients: ['support@desk.acme.com'], subject: 'Help', text: 'hi',
   inReplyTo: null, references: [], autoSubmitted: null, attachments: [],
 };
 const lookup = { knownTicketId: 'tkt-1', fromDomain: 'desk.acme.com' };
