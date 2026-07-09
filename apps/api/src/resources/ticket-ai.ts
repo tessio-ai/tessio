@@ -88,7 +88,7 @@ export function registerTicketAiRoutes(app: FastifyInstance, db: Db): void {
     const scope = { userId: req.user.id, role: req.user.role };
     const ticket = await loadTicketContext(db, req.orgId, id, scope);
     const comments = await loadComments(db, req.orgId, id);
-    const result = streamTicketSummary({ model: createTessClient(settings), ticket, comments });
+    const result = streamTicketSummary({ model: createTessClient(settings), ticket, comments, botName: settings.botName });
     await streamToReply(reply, result.textStream);
   });
 
@@ -107,6 +107,7 @@ export function registerTicketAiRoutes(app: FastifyInstance, db: Db): void {
       ticket,
       comments,
       requesterName: requester?.name ?? null,
+      botName: settings.botName,
     });
     await streamToReply(reply, result.textStream);
   });
@@ -119,7 +120,7 @@ export function registerTicketAiRoutes(app: FastifyInstance, db: Db): void {
     const candidates = (await usersRepo(db).list(req.orgId))
       .filter((u) => u.role !== 'requester')
       .map((u) => ({ id: u.id, name: u.name }));
-    const result = await triageTicket({ model: createTessClient(settings), ticket, candidateAgents: candidates });
+    const result = await triageTicket({ model: createTessClient(settings), ticket, candidateAgents: candidates, botName: settings.botName });
     const saved = await ticketAiTriageRepo(db).upsert({
       ticketId: id,
       category: result.category,

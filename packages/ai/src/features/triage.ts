@@ -20,10 +20,11 @@ export async function triageTicket(input: {
   model: LanguageModel;
   ticket: TicketContext;
   candidateAgents: CandidateAgent[];
+  botName?: string;
 }): Promise<TriageResult> {
   // Guardrail: strip PII from the ticket before it reaches OpenAI.
   const ticket = redactTicketFields(input.ticket);
-  const { system, prompt } = buildTriagePrompt({ ticket, candidateAgents: input.candidateAgents });
+  const { system, prompt } = buildTriagePrompt({ ticket, candidateAgents: input.candidateAgents, botName: input.botName });
   const { object } = await generateObject({
     model: input.model,
     schema: triageResultSchema,

@@ -3,11 +3,13 @@
 import { useState, type CSSProperties } from 'react';
 import { Icon } from '../icons';
 import { Orb } from '../agent';
+import { useBot } from '../bot';
 import { detectCategory } from '../portal-assist';
 import { splitHeadline, resolvePills } from './hero-helpers';
 import type { PortalSettingsRow, PublicFormSummary } from '../../api/portal';
 
 export function PortalHero({ settings, forms, onOpenForm }: { settings: PortalSettingsRow; forms: PublicFormSummary[]; onOpenForm: (key: string) => void }) {
+  const bot = useBot();
   const { hero } = settings;
   const [q, setQ] = useState('');
   const detected = q.length > 3 ? detectCategory(q) : null;
@@ -35,7 +37,7 @@ export function PortalHero({ settings, forms, onOpenForm }: { settings: PortalSe
             <input aria-label="Search requests" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search or describe your issue…" />
             {q.length > 1 && (
               <div className="rp-suggest">
-                {detected && (<div className="rp-suggest-tess"><Orb size="sm" /><span><b>Tess:</b> sounds like a {detected} issue — here's the fastest way to get help.</span></div>)}
+                {detected && (<div className="rp-suggest-tess"><Orb size="sm" /><span><b>{bot.name}:</b> sounds like a {detected} issue — here's the fastest way to get help.</span></div>)}
                 {matches.length ? matches.map((f) => (
                   <button type="button" className="rp-srow" key={f.key} onClick={() => onOpenForm(f.key)}>
                     <span className="ss-ico"><Icon name={f.icon ?? 'inbox'} size={15} /></span>

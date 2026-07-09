@@ -14,6 +14,7 @@ import { PortalCatalogView } from '../portal/PortalCatalogView';
 import { groupForms } from '../portal/grouping';
 import { usePublicForms } from '../portal/queries';
 import type { PortalSettingsRow } from '../../api/portal';
+import { useBot } from '../bot';
 
 type Go = (screen: string, extra?: Partial<Route>) => void;
 
@@ -24,6 +25,7 @@ interface Local {
 }
 
 export function PortalEditor({ go }: { go: Go }) {
+  const bot = useBot();
   const { data: settings, isLoading } = usePortalSettings();
   const update = useUpdatePortalSettings();
   const [local, setLocal] = useState<Local | null>(null);
@@ -91,7 +93,7 @@ export function PortalEditor({ go }: { go: Go }) {
               <input id="p_headline" className="input" value={local.heroHeadline} onChange={(e) => set({ heroHeadline: e.target.value })} /></div>
             <div className="field"><label className="field-label" htmlFor="p_intro">Intro</label>
               <textarea id="p_intro" className="textarea" value={local.heroIntro} onChange={(e) => set({ heroIntro: e.target.value })} /></div>
-            <label className="field-check"><input type="checkbox" checked={local.showTess} onChange={(e) => set({ showTess: e.target.checked })} /> Show Tess assist</label>
+            <label className="field-check"><input type="checkbox" checked={local.showTess} onChange={(e) => set({ showTess: e.target.checked })} /> Show {bot.name} assist</label>
           </div>
 
           <div className="card pe-section">

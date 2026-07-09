@@ -622,6 +622,18 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
 .orb.xl { width: 56px; height: 56px; }
 @keyframes orbspin { to { --orb-ang: 360deg; } }
 
+/* Custom assistant icon (emoji/monogram) centered inside the orb; the spinning
+   gradient stays behind it. */
+.orb-ic {
+  position: absolute; inset: 0; z-index: 1;
+  display: grid; place-items: center;
+  font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.25);
+  font-size: 12px; line-height: 1; user-select: none;
+}
+.orb.md .orb-ic { font-size: 16px; }
+.orb.lg .orb-ic { font-size: 22px; }
+.orb.xl .orb-ic { font-size: 30px; }
+
 .orb.thinking { animation-duration: 1.6s; }
 .orb.thinking::before {
   content: ""; position: absolute; inset: -5px; border-radius: 50%;

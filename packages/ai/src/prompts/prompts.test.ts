@@ -40,4 +40,16 @@ describe('prompt builders', () => {
     expect(prompt).toContain('Priya');
     expect(prompt).toContain('Sam');
   });
+
+  it('defaults the assistant identity to Tess', () => {
+    expect(buildSummarizePrompt({ ticket, comments }).system).toContain('You are Tess,');
+    expect(buildDraftPrompt({ ticket, comments, requesterName: null }).system).toContain('You are Tess,');
+    expect(buildTriagePrompt({ ticket, candidateAgents: [] }).system).toContain('You are Tess,');
+  });
+
+  it('speaks as the personalized bot name when one is set', () => {
+    expect(buildSummarizePrompt({ ticket, comments, botName: 'Max' }).system).toContain('You are Max,');
+    expect(buildDraftPrompt({ ticket, comments, requesterName: null, botName: 'Max' }).system).toContain('You are Max,');
+    expect(buildTriagePrompt({ ticket, candidateAgents: [], botName: 'Max' }).system).toContain('You are Max,');
+  });
 });

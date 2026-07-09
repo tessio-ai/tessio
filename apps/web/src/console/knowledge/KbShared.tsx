@@ -3,19 +3,21 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../icons';
 import { Orb } from '../agent';
+import { useBot } from '../bot';
 import { Avatar, relTime } from '../ui';
 import { CATEGORY_GROUPS } from './kb-types';
 import { sanitizeHtml } from './sanitize';
 import type { KbArticleRow } from '../../api/types';
 import type { ArticleData } from './kb-types';
 
-/* ---- Tess TL;DR card ---- */
+/* ---- Assistant TL;DR card ---- */
 export function Tldr({ points }: { points: string[] }) {
+  const bot = useBot();
   return (
     <div className="tldr">
       <div className="tldr-head">
         <Orb size="sm" />
-        <span className="tl-name">Tess summary</span>
+        <span className="tl-name">{bot.name} summary</span>
         <span className="ai-chip"><Icon name="sparkles" size={11} />TL;DR</span>
       </div>
       <ul>

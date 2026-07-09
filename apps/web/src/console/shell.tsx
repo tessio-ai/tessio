@@ -7,6 +7,7 @@ import { IconButton, Kbd } from './ui';
 import type { AuthUser } from '../auth/api';
 import { useQuery } from '@tanstack/react-query';
 import { Orb, ASK_SUGGESTIONS, AskTessResult } from './agent';
+import { useBot } from './bot';
 import { NotificationBell } from './NotificationBell';
 import { TICKETS } from './data';
 import { getOrg } from '../api/org';
@@ -151,6 +152,7 @@ export function TopBar({
   openAsk: () => void;
   openCreate: () => void;
 }) {
+  const bot = useBot();
   let crumbs = BREADCRUMBS[route.screen] || ['Tessio'];
   if (route.screen === 'tickets' && route.ticketId) {
     const t = TICKETS.find((x) => x.id === route.ticketId);
@@ -187,9 +189,9 @@ export function TopBar({
 
       <div className="tb-spacer" />
 
-      <div className="ask-tess-btn" onClick={openAsk} title="Ask Tess (natural-language agent)">
+      <div className="ask-tess-btn" onClick={openAsk} title={`Ask ${bot.name} (natural-language agent)`}>
         <Orb size="sm" />
-        Ask Tess
+        Ask {bot.name}
       </div>
       <div className="split">
         <button className="btn btn-primary" onClick={openCreate}>
@@ -221,6 +223,7 @@ export function CommandPalette({
   initialMode?: string;
 }) {
   const { data: aiSettings } = useAiSettings();
+  const bot = useBot();
   const askEnabled = !!aiSettings?.enabled && !!aiSettings.features.ask;
   const askLoading = aiSettings === undefined;
   const [mode, setMode] = useState(initialMode);
@@ -293,9 +296,9 @@ export function CommandPalette({
           <div
             className={'ask-mode' + (mode === 'ask' ? ' active' : '') + (askEnabled ? '' : ' disabled')}
             onClick={() => { if (askEnabled) { setMode('ask'); setAsked(null); setQ(''); } }}
-            title={askEnabled ? undefined : 'Enable Ask Tess in Settings → Tess AI'}
+            title={askEnabled ? undefined : `Enable Ask ${bot.name} in Settings → ${bot.name} AI`}
           >
-            <Icon name="sparkles" size={14} />Ask Tess
+            <Icon name="sparkles" size={14} />Ask {bot.name}
           </div>
         </div>
         <div className="palette-input">
@@ -305,7 +308,7 @@ export function CommandPalette({
             value={q}
             onChange={(e) => { setQ(e.target.value); setAsked(null); }}
             onKeyDown={onKey}
-            placeholder={mode === 'ask' ? 'Ask Tess to do something across the queue…' : 'Type a command or search…'}
+            placeholder={mode === 'ask' ? `Ask ${bot.name} to do something across the queue…` : 'Type a command or search…'}
           />
           <Kbd>esc</Kbd>
         </div>
@@ -316,7 +319,7 @@ export function CommandPalette({
           ) : !askEnabled && !askLoading ? (
             <div className="ask-suggest">
               <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 'var(--t-small)' }}>
-                Ask Tess is turned off. Enable it in Settings → Tess AI.
+                Ask {bot.name} is turned off. Enable it in Settings → {bot.name} AI.
               </div>
             </div>
           ) : (
@@ -366,7 +369,7 @@ export function CommandPalette({
         <div className="palette-foot">
           <span className="pf-i"><Kbd>↑</Kbd><Kbd>↓</Kbd> navigate</span>
           <span className="pf-i"><Kbd>↵</Kbd> {mode === 'ask' ? 'ask' : 'select'}</span>
-          <span className="pf-i" style={{ marginLeft: 'auto' }}>{mode === 'ask' ? 'Tess searches across your whole queue' : 'esc to close'}</span>
+          <span className="pf-i" style={{ marginLeft: 'auto' }}>{mode === 'ask' ? `${bot.name} searches across your whole queue` : 'esc to close'}</span>
         </div>
       </div>
     </>

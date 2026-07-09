@@ -30,6 +30,9 @@ export const aiProvider = z.enum(['openai', 'openai-compatible']);
 export type AiProvider = z.infer<typeof aiProvider>;
 export const DEFAULT_AI_PROVIDER: AiProvider = 'openai';
 
+/** Default assistant display name, used when an org hasn't personalized it. */
+export const DEFAULT_BOT_NAME = 'Tess';
+
 /** Resolved settings used at call time — includes the decrypted key. Never sent to clients. */
 export interface AiSettings {
   enabled: boolean;
@@ -39,6 +42,8 @@ export interface AiSettings {
   model: string; // chat model (summary/draft/triage)
   embeddingModel: string; // embedding model (similar tickets)
   apiKey: string | null;
+  /** Assistant display name — spoken as the bot's identity in prompts and shown in the UI. */
+  botName: string;
   features: AiFeatures;
 }
 

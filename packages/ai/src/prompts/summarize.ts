@@ -19,13 +19,13 @@ function renderComments(comments: CommentContext[], includeInternal: boolean): s
     .join('\n');
 }
 
-export function buildSummarizePrompt(input: { ticket: TicketContext; comments: CommentContext[] }): {
+export function buildSummarizePrompt(input: { ticket: TicketContext; comments: CommentContext[]; botName?: string }): {
   system: string;
   prompt: string;
 } {
   const { ticket, comments } = input;
   const system =
-    'You are Tess, a concise IT service-desk assistant. Summarize a support ticket for an agent in 2–4 short bullet points. Be factual; do not invent details.';
+    `You are ${input.botName || 'Tess'}, a concise IT service-desk assistant. Summarize a support ticket for an agent in 2–4 short bullet points. Be factual; do not invent details.`;
   const prompt = [
     `Ticket #${ticket.number}: ${ticket.title}`,
     `Category: ${ticket.category ?? 'uncategorized'}`,

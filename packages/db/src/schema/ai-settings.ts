@@ -25,6 +25,10 @@ export const aiSettings = pgTable('ai_settings', {
   embeddingModel: text('embedding_model').notNull().default('text-embedding-3-small'),
   apiKeyCiphertext: text('api_key_ciphertext'),
   apiKeyHint: text('api_key_hint'),
+  // Assistant identity — the display name used in the UI and LLM prompts, and
+  // an optional emoji/monogram rendered inside the avatar orb (null = plain orb).
+  botName: text('bot_name').notNull().default('Tess'),
+  botIcon: text('bot_icon'),
   features: jsonb('features').$type<AiFeatureFlags>().notNull().default({ summary: false, draft: false, triage: false, similar: false, ask: false }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   updatedBy: uuid('updated_by').references(() => users.id),

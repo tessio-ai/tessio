@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '../icons';
 import { Orb } from '../agent';
+import { useBot } from '../bot';
 import { Button, relTime, absTime } from '../ui';
 import { useArticles } from './queries';
 import { sanitizeHtml } from './sanitize';
@@ -48,6 +49,7 @@ function synthAnswer(q: string) {
 }
 
 function KbAsk({ articles, go }: { articles: KbArticleRow[]; go: Go }) {
+  const bot = useBot();
   const [q, setQ] = useState('');
   const [asked, setAsked] = useState<{ answer: string; sources: string[] } | null>(null);
   const [thinking, setThinking] = useState(false);
@@ -73,7 +75,7 @@ function KbAsk({ articles, go }: { articles: KbArticleRow[]; go: Go }) {
         <div className="kb-ask-row">
           <Orb size="lg" thinking={thinking} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="kb-ask-title">Ask Tess</div>
+            <div className="kb-ask-title">Ask {bot.name}</div>
             <div className="kb-ask-sub">Get a synthesized answer from across the knowledge base.</div>
           </div>
         </div>
@@ -114,6 +116,7 @@ function KbAsk({ articles, go }: { articles: KbArticleRow[]; go: Go }) {
 
 /* ---- Main KnowledgeList ---- */
 export function KnowledgeList({ go }: { go: Go }) {
+  const bot = useBot();
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const q = useArticles({ limit: 200, sort: { field: 'updatedAt', dir: 'desc', type: 'date' } });
@@ -152,7 +155,7 @@ export function KnowledgeList({ go }: { go: Go }) {
             <p className="ph-desc">Self-service articles that deflect tickets before they're filed.</p>
           </div>
           <div className="ph-actions">
-            <Button variant="outline" icon="sparkles" size="sm">Draft with Tess</Button>
+            <Button variant="outline" icon="sparkles" size="sm">Draft with {bot.name}</Button>
             <Button variant="primary" icon="plus" onClick={() => go('knowledge', { view: 'new' })}>New article</Button>
           </div>
         </div>
@@ -177,7 +180,7 @@ export function KnowledgeList({ go }: { go: Go }) {
           <div className="kb-stat"><span className="ks-num">{published}</span><span className="ks-lab">Published</span></div>
           <div className="kb-stat"><span className="ks-num">—</span><span className="ks-lab">Total views</span></div>
           <div className="kb-stat"><span className="ks-num">—</span><span className="ks-lab">Avg. helpful</span></div>
-          <div className="kb-stat"><span className="ks-num" style={{ color: 'var(--ai-text)' }}>312</span><span className="ks-lab">Deflected by Tess this month</span></div>
+          <div className="kb-stat"><span className="ks-num" style={{ color: 'var(--ai-text)' }}>312</span><span className="ks-lab">Deflected by {bot.name} this month</span></div>
         </div>
 
         <div className="toolbar" style={{ paddingTop: 0 }}>

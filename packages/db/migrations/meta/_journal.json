@@ -204,6 +204,13 @@
       "when": 1783476295037,
       "tag": "0028_rich_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1783546601449,
+      "tag": "0029_military_firebrand",
+      "breakpoints": true
     }
   ]
 }

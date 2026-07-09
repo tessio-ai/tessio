@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { Icon } from '../icons';
+import { useBot } from '../bot';
 import type { PublicFormSummary } from '../../api/portal';
 import type { PortalCatalogConfig, PortalCategory } from '@tessio/shared';
 import type { CatalogGroup } from './grouping';
@@ -8,13 +9,14 @@ import type { CatalogGroup } from './grouping';
 const OTHER_GROUP = { key: '__other__', label: 'Other requests', icon: 'inbox', color: '#6b7280' };
 
 function CatalogCard({ form, color, onOpenForm }: { form: PublicFormSummary; color: string; onOpenForm: (key: string) => void }) {
+  const bot = useBot();
   return (
     <button type="button" className="rp-card" onClick={() => onOpenForm(form.key)}>
       <span className="rc-ico" style={{ background: color }}><Icon name={form.icon || 'inbox'} size={19} /></span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="rc-name">{form.name}</div>
         {form.description && <div className="rc-desc">{form.description}</div>}
-        <div className="rc-meta">{form.theme.showTess ? <span className="ai-chip"><Icon name="sparkles" size={11} />Tess-assisted</span> : <><Icon name="clock" size={12} />Usually answered within a day</>}</div>
+        <div className="rc-meta">{form.theme.showTess ? <span className="ai-chip"><Icon name="sparkles" size={11} />{bot.name}-assisted</span> : <><Icon name="clock" size={12} />Usually answered within a day</>}</div>
       </div>
       <Icon name="chevronRight" size={18} className="rc-arrow" />
     </button>
@@ -22,6 +24,7 @@ function CatalogCard({ form, color, onOpenForm }: { form: PublicFormSummary; col
 }
 
 function RowCard({ form, color, onOpenForm }: { form: PublicFormSummary; color: string; onOpenForm: (key: string) => void }) {
+  const bot = useBot();
   return (
     <button type="button" className="rp-row" onClick={() => onOpenForm(form.key)}>
       <span className="rc-ico" style={{ background: color }}><Icon name={form.icon || 'inbox'} size={18} /></span>
@@ -29,7 +32,7 @@ function RowCard({ form, color, onOpenForm }: { form: PublicFormSummary; color: 
         <div className="rp-rn">{form.name}</div>
         {form.description && <div className="rp-rd">{form.description}</div>}
       </div>
-      {form.theme.showTess && <span className="ai-chip"><Icon name="sparkles" size={11} />Tess</span>}
+      {form.theme.showTess && <span className="ai-chip"><Icon name="sparkles" size={11} />{bot.name}</span>}
       <Icon name="chevronRight" size={16} className="rc-arrow" />
     </button>
   );

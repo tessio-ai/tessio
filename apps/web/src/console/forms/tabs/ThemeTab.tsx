@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import type { PortalTheme } from '@tessio/shared';
+import { useBot } from '../../bot';
 
 export function ThemeTab({ theme, onChange }: { theme: PortalTheme; onChange: (t: PortalTheme) => void }) {
+  const bot = useBot();
   const set = (patch: Partial<PortalTheme>) => onChange({ ...theme, ...patch });
   return (
     <div className="theme-tab">
@@ -17,7 +19,7 @@ export function ThemeTab({ theme, onChange }: { theme: PortalTheme; onChange: (t
       <div className="field"><label className="field-label" htmlFor="t_layout">Layout</label>
         <select id="t_layout" className="select" value={theme.layout} onChange={(e) => set({ layout: e.target.value as PortalTheme['layout'] })}>
           <option value="single">single</option><option value="card">card</option></select></div>
-      <label className="field-check"><input type="checkbox" checked={theme.showTess} onChange={(e) => set({ showTess: e.target.checked })} /> Show Tess assist</label>
+      <label className="field-check"><input type="checkbox" checked={theme.showTess} onChange={(e) => set({ showTess: e.target.checked })} /> Show {bot.name} assist</label>
     </div>
   );
 }

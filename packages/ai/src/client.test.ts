@@ -11,6 +11,7 @@ const base: AiSettings = {
   model: 'gpt-4o-mini',
   embeddingModel: 'text-embedding-3-small',
   apiKey: 'sk-test',
+  botName: 'Tess',
   features: { summary: true, draft: true, triage: true, similar: true, ask: false },
 };
 

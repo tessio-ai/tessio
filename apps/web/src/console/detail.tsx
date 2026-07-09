@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { Icon } from './icons';
 import { Avatar, AvatarName, StatusPill, PriorityTag, TypeBadge, Button, IconButton, Kbd, Popover, relTime, absTime, dueInfo } from './ui';
 import { Orb, AgentSummary, AiDraftCard, AiInsights } from './agent';
+import { useBot } from './bot';
 import { STATUS_MAP, PRIORITY_MAP, TYPE_MAP } from './data';
 import type { Route } from './shell';
 import { useTicket, useTickets, useUsers, useTicketSchemas, useTicketComments, useAddComment, useUpdateTicket, useTicketLinks, useAddTicketLink, useDeleteTicketLink, useTeams, useTicketActivity, useTicketAttachments, useUploadAttachment, useDeleteAttachment } from './tickets/queries';
@@ -213,13 +214,14 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
   }
 
   function TimelineItem({ ev }: { ev: any }) {
+    const bot = useBot();
     const who = umap[ev.who] ?? { name: 'Someone', initials: '?', color: 'var(--muted)', id: '', role: '' };
     if (ev.kind === 'agent') {
       return (
         <div className="tl-item">
           <span className="tl-ico agent" style={{ display: 'grid', placeItems: 'center' }}><Orb size="sm" /></span>
           <div className="tl-body" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 5, flexWrap: 'wrap' }}>
-            <span className="tl-line"><b className="ai-text">Tess</b> {ev.body}</span>
+            <span className="tl-line"><b className="ai-text">{bot.name}</b> {ev.body}</span>
             <span className="ai-chip"><Icon name="sparkles" size={10} />auto</span>
             <span className="tl-time" title={absTime(ev.at)}>· {relTime(ev.at)}</span>
           </div>

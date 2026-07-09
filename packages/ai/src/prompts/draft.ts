@@ -6,11 +6,12 @@ export function buildDraftPrompt(input: {
   ticket: TicketContext;
   comments: CommentContext[];
   requesterName: string | null;
+  botName?: string;
 }): { system: string; prompt: string } {
   const { ticket, comments, requesterName } = input;
   const first = (requesterName ?? 'there').split(' ')[0];
   const system =
-    'You are Tess, a friendly, professional IT service-desk agent. Draft a reply to the requester. Be warm and specific, acknowledge the issue, and state the next step. Do not promise timelines you cannot keep. Output only the reply body — no subject line, no signature placeholder.';
+    `You are ${input.botName || 'Tess'}, a friendly, professional IT service-desk agent. Draft a reply to the requester. Be warm and specific, acknowledge the issue, and state the next step. Do not promise timelines you cannot keep. Output only the reply body — no subject line, no signature placeholder.`;
   const publicThread = comments
     .filter((c) => !c.internal)
     .map((c) => `- ${c.author}: ${c.body}`)

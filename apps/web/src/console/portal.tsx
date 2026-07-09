@@ -4,6 +4,7 @@
 import { Fragment, useState, type CSSProperties, type ReactNode } from 'react';
 import { Icon } from './icons';
 import { Orb } from './agent';
+import { useBot } from './bot';
 import { useAuth } from '../auth/AuthContext';
 import { detectCategory, DEFLECT, ROUTE } from './portal-assist';
 import { usePublicPortalSettings, usePublicForms, usePublicForm, useMyTickets, useSubmitForm } from './portal/queries';
@@ -68,13 +69,14 @@ function PortalField({ field, value, error, onChange }: { field: ResolvedField; 
 }
 
 function IntakeAssist({ category, accent }: { category: string; accent: string }) {
+  const bot = useBot();
   const kb = DEFLECT[category];
   const route = ROUTE[category] || ROUTE.Other;
   return (
     <div className="intake-assist">
       <div className="intake-assist-head">
         <Orb size="sm" />
-        <span className="ia-detected"><span className="ia-name">Tess</span> sees this is likely a <span className="ia-tag">{category}</span> issue — category set for you</span>
+        <span className="ia-detected"><span className="ia-name">{bot.name}</span> sees this is likely a <span className="ia-tag">{category}</span> issue — category set for you</span>
       </div>
       {kb && (
         <div className="deflect">

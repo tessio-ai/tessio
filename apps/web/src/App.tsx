@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './auth/AuthContext';
 import { LoginPage } from './auth/LoginPage';
 import { Console } from './console/Console';
 import { RequesterPortal } from './console/portal';
+import { BotProvider } from './console/bot';
 import './console/console.css';
 
 const queryClient = new QueryClient();
@@ -19,8 +20,8 @@ function Routed() {
   if (loading) return <div className="app-loading">Loading…</div>;
   // Self-hosted: the app opens straight to sign-in (no marketing/cloud landing).
   if (!user) return <LoginPage onLogin={login} />;
-  if (user.role === 'requester') return <StandalonePortal />;
-  return <Console user={user} />;
+  if (user.role === 'requester') return <BotProvider><StandalonePortal /></BotProvider>;
+  return <BotProvider><Console user={user} /></BotProvider>;
 }
 
 export function App() {

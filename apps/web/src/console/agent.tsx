@@ -5,11 +5,17 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Icon } from './icons';
 import { IconButton, relTime } from './ui';
 import { askTess } from '../api/ai';
+import { useBot } from './bot';
 import { useDashboard } from './dashboard.queries';
 
-/* ---- Orb (Tess avatar) ---- */
+/* ---- Orb (assistant avatar) — renders the org's custom emoji/monogram when set ---- */
 export function Orb({ size = 'md', thinking = false, title }: { size?: string; thinking?: boolean; title?: string }) {
-  return <span className={'orb ' + size + (thinking ? ' thinking' : '')} title={title || 'Tess — your triage agent'} />;
+  const bot = useBot();
+  return (
+    <span className={'orb ' + size + (thinking ? ' thinking' : '')} title={title || `${bot.name} — your triage agent`}>
+      {bot.icon && <span className="orb-ic" aria-hidden="true">{bot.icon}</span>}
+    </span>
+  );
 }
 
 
@@ -29,6 +35,7 @@ export function AgentBand({
   today?: DayToday;
   recent?: RecentTriage[];
 }) {
+  const bot = useBot();
   if (!tess?.enabled) {
     return (
       <div className="agent-band">
@@ -36,13 +43,13 @@ export function AgentBand({
           <Orb size="xl" />
           <div>
             <div className="agent-headline">
-              Meet <span className="ai-grad-text">Tess</span>, your AI service-desk agent.
+              Meet <span className="ai-grad-text">{bot.name}</span>, your AI service-desk agent.
             </div>
             <div className="agent-sub">Turn on summaries, draft replies, auto-triage, and similar-ticket search.</div>
           </div>
           <div className="agent-stats">
             <span className="linkbtn" style={{ whiteSpace: 'nowrap' }} onClick={() => go('settings')}>
-              Enable Tess AI <Icon name="arrowRight" size={13} />
+              Enable {bot.name} AI <Icon name="arrowRight" size={13} />
             </span>
           </div>
         </div>
@@ -57,7 +64,7 @@ export function AgentBand({
         <Orb size="xl" />
         <div>
           <div className="agent-headline">
-            Tess has triaged <span className="ai-grad-text">{tess.triaged} {tess.triaged === 1 ? 'ticket' : 'tickets'}</span> for your desk.
+            {bot.name} has triaged <span className="ai-grad-text">{tess.triaged} {tess.triaged === 1 ? 'ticket' : 'tickets'}</span> for your desk.
           </div>
           <div className="agent-sub">
             {tess.indexed} indexed for similar-ticket search
@@ -80,7 +87,7 @@ export function AgentBand({
       {feed.length > 0 && (
         <div className="agent-feed">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span className="afeed-live"><span className="lv" />Recent Tess activity</span>
+            <span className="afeed-live"><span className="lv" />Recent {bot.name} activity</span>
             {tess.flagged > 0 && (
               <span className="linkbtn" style={{ fontSize: 'var(--t-caption)', whiteSpace: 'nowrap' }} onClick={() => go('tickets', { view: 'unassigned' })}>
                 Review flagged <Icon name="arrowRight" size={13} />
@@ -107,14 +114,15 @@ export function AgentBand({
 /* ---- List triage banner ---- */
 export function TriageBanner({ go }: { go: (s: string, e?: any) => void }) {
   const { data } = useDashboard();
+  const bot = useBot();
   const tess = data?.tess;
-  // Only show when Tess is on and has actually triaged something in this queue.
+  // Only show when the assistant is on and has actually triaged something in this queue.
   if (!tess?.enabled || tess.triaged === 0) return null;
   return (
     <div className="triage-banner">
       <Orb size="md" />
       <div className="tb-txt">
-        <b>Tess triaged {tess.triaged} {tess.triaged === 1 ? 'ticket' : 'tickets'}</b> — auto-categorized &amp; prioritized
+        <b>{bot.name} triaged {tess.triaged} {tess.triaged === 1 ? 'ticket' : 'tickets'}</b> — auto-categorized &amp; prioritized
         {tess.flagged > 0 ? <> · {tess.flagged} flagged for your review</> : null}.
       </div>
       <div style={{ flex: 1 }} />
@@ -142,6 +150,7 @@ export function AgentSummary({
   enabled: boolean;
 }) {
   const [open, setOpen] = useState(true);
+  const bot = useBot();
   if (!enabled) return null;
   const conf = triage?.confidence ?? null;
   return (
@@ -149,7 +158,7 @@ export function AgentSummary({
       <div className="ai-card-pad">
         <div className="ai-head">
           <Orb size="sm" thinking={loading} />
-          <span className="ai-name">Summary by Tess</span>
+          <span className="ai-name">Summary by {bot.name}</span>
           {conf != null && (
             <span className="conf" style={{ marginLeft: 4 }}>
               <span className="conf-bar"><i style={{ width: Math.round(conf * 100) + '%' }} /></span>
@@ -170,7 +179,7 @@ export function AgentSummary({
               <div style={{ marginTop: 10, fontSize: 'var(--t-small)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{summary}</div>
             ) : (
               <button className="ai-btn" style={{ marginTop: 10 }} disabled={loading} onClick={onSummarize}>
-                <Icon name="sparkles" size={13} />{loading ? 'Summarizing…' : 'Summarize with Tess'}
+                <Icon name="sparkles" size={13} />{loading ? 'Summarizing…' : `Summarize with ${bot.name}`}
               </button>
             )}
           </>
@@ -194,13 +203,14 @@ export function AiDraftCard({
   onUse: () => void;
   onDismiss: () => void;
 }) {
+  const bot = useBot();
   return (
     <div className="ai-card" style={{ marginBottom: 12 }}>
       <div className="ai-card-pad">
         <div className="ai-head" style={{ marginBottom: 8 }}>
           <Orb size="sm" thinking={loading} />
           <span className="ai-name">Suggested reply</span>
-          <span className="ai-chip"><Icon name="sparkles" size={11} />Tess</span>
+          <span className="ai-chip"><Icon name="sparkles" size={11} />{bot.name}</span>
           <div style={{ flex: 1 }} />
           <IconButton name="x" small title="Dismiss" onClick={onDismiss} />
         </div>
@@ -214,7 +224,7 @@ export function AiDraftCard({
             <button className="ai-btn solid" onClick={onUse}><Icon name="check" size={14} />Use this reply</button>
           ) : (
             <button className="ai-btn solid" disabled={loading} onClick={onGenerate}>
-              <Icon name="wand" size={14} />{loading ? 'Drafting…' : 'Draft reply with Tess'}
+              <Icon name="wand" size={14} />{loading ? 'Drafting…' : `Draft reply with ${bot.name}`}
             </button>
           )}
           {draft && (
@@ -306,6 +316,7 @@ function linkifyTicketRefs(text: string, byNumber: Map<number, string>, onOpen: 
 }
 
 export function AskTessResult({ query, onOpenTicket }: { query: string; onOpenTicket: (id: string) => void }) {
+  const bot = useBot();
   const [loading, setLoading] = useState(true);
   const [answer, setAnswer] = useState('');
   const [tickets, setTickets] = useState<{ number: number | null; id: string; title: string; status: string | null }[]>([]);
@@ -319,7 +330,7 @@ export function AskTessResult({ query, onOpenTicket }: { query: string; onOpenTi
     setTickets([]);
     askTess(query)
       .then((r) => { if (!cancelled) { setAnswer(r.answer); setTickets(r.tickets); } })
-      .catch((e) => { if (!cancelled) setError((e as Error).message || 'Tess could not answer that.'); })
+      .catch((e) => { if (!cancelled) setError((e as Error).message || `${bot.name} could not answer that.`); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [query]);
@@ -331,7 +342,7 @@ export function AskTessResult({ query, onOpenTicket }: { query: string; onOpenTi
     <div className="ask-answer">
       <div className="ai-head" style={{ marginBottom: 10 }}>
         <Orb size="md" thinking={loading} />
-        <div><div className="ai-name">Tess</div><div className="ai-meta">{loading ? 'Searching the queue…' : error ? 'Something went wrong' : "Here's what I found"}</div></div>
+        <div><div className="ai-name">{bot.name}</div><div className="ai-meta">{loading ? 'Searching the queue…' : error ? 'Something went wrong' : "Here's what I found"}</div></div>
       </div>
       {loading && <div className="ask-typing"><i /><i /><i /></div>}
       {!loading && error && <div className="ai-card"><div className="ai-card-pad danger">{error}</div></div>}

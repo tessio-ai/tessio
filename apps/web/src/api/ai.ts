@@ -16,6 +16,8 @@ export interface AiSettingsView {
   embeddingModel: string;
   apiKeyHint: string | null;
   apiKeySet: boolean;
+  botName: string;
+  botIcon: string | null;
   features: AiFeatureFlags;
 }
 
@@ -24,7 +26,15 @@ export interface UpdateAiSettingsInput {
   model?: string;
   embeddingModel?: string;
   apiKey?: string;
+  botName?: string;
+  botIcon?: string | null;
   features?: Partial<AiFeatureFlags>;
+}
+
+/** Assistant display name + avatar icon — readable by every authenticated role. */
+export interface BotIdentity {
+  name: string;
+  icon: string | null;
 }
 
 export interface TicketTriage {
@@ -36,6 +46,8 @@ export interface TicketTriage {
   reasoning: string | null;
   triagedAt: string | null;
 }
+
+export const getBotIdentity = () => request<BotIdentity>('/ai/identity');
 
 export const getAiSettings = () => request<AiSettingsView>('/ai/settings');
 export const updateAiSettings = (patch: UpdateAiSettingsInput) =>

@@ -10,11 +10,14 @@ interface Draft {
   model: string;
   embeddingModel: string;
   apiKey: string; // blank means "leave existing key"
+  botName: string;
+  botIcon: string; // '' means "default orb"
   features: AiFeatureFlags;
 }
 
 const MODEL_HINT = 'e.g. gpt-4o-mini';
 const EMBED_HINT = 'e.g. text-embedding-3-small';
+const ICON_PRESETS = ['🤖', '✨', '🪄', '💡', '🦾', '🔮'];
 
 export function TessAiSettings() {
   const { data } = useAiSettings();
@@ -31,6 +34,8 @@ export function TessAiSettings() {
         model: data.model,
         embeddingModel: data.embeddingModel,
         apiKey: '',
+        botName: data.botName,
+        botIcon: data.botIcon ?? '',
         features: data.features,
       });
     }
@@ -46,8 +51,10 @@ export function TessAiSettings() {
       enabled: draft.enabled,
       model: draft.model,
       embeddingModel: draft.embeddingModel,
+      botIcon: draft.botIcon.trim() || null,
       features: draft.features,
     };
+    if (draft.botName.trim()) patch.botName = draft.botName.trim();
     if (draft.apiKey.trim()) patch.apiKey = draft.apiKey.trim();
     setSaveResult(null);
     update.mutate(patch, {
@@ -67,21 +74,74 @@ export function TessAiSettings() {
     });
   };
 
+  const displayName = draft.botName.trim() || 'Tess';
+
   return (
     <>
-      <h1 className="set-h">Tess AI</h1>
-      <p className="set-h-desc">Connect your OpenAI key so Tess can summarize, draft replies, triage, and find similar tickets. Your key is encrypted and never shown again.</p>
+      <h1 className="set-h">{displayName} AI</h1>
+      <p className="set-h-desc">Connect your OpenAI key so {displayName} can summarize, draft replies, triage, and find similar tickets. Your key is encrypted and never shown again.</p>
 
       <div className="set-card">
         <div className="set-card-body">
           <div className="set-row">
-            <div><div className="sr-label">Enable Tess AI</div><div className="sr-hint">Turn Tess AI on or off for this workspace.</div></div>
+            <div><div className="sr-label">Enable {displayName} AI</div><div className="sr-hint">Turn {displayName} AI on or off for this workspace.</div></div>
             <input
               type="checkbox"
               checked={draft.enabled}
               onChange={(e) => set('enabled', e.target.checked)}
               style={{ width: 18, height: 18, cursor: 'pointer' }}
             />
+          </div>
+
+          <div className="set-row">
+            <div><div className="sr-label">Assistant name</div><div className="sr-hint">What the assistant is called across the console, the requester portal, and its replies.</div></div>
+            <input
+              className="input"
+              value={draft.botName}
+              maxLength={24}
+              placeholder="Tess"
+              onChange={(e) => set('botName', e.target.value)}
+              style={{ maxWidth: 320 }}
+            />
+          </div>
+
+          <div className="set-row">
+            <div><div className="sr-label">Assistant icon</div><div className="sr-hint">An emoji or 1–2 letters shown inside the orb — leave blank for the plain orb.</div></div>
+            <div className="logo-controls">
+              <span className="orb lg" aria-hidden="true">
+                {draft.botIcon.trim() && <span className="orb-ic">{draft.botIcon.trim()}</span>}
+              </span>
+              <div>
+                <input
+                  className="input mono-input"
+                  value={draft.botIcon}
+                  maxLength={4}
+                  placeholder="🤖"
+                  onChange={(e) => set('botIcon', e.target.value)}
+                />
+                <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center' }}>
+                  {ICON_PRESETS.map((ic) => (
+                    <button
+                      key={ic}
+                      type="button"
+                      title={`Use ${ic}`}
+                      onClick={() => set('botIcon', ic)}
+                      style={{ all: 'unset', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2 }}
+                    >
+                      {ic}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="linkbtn"
+                    onClick={() => set('botIcon', '')}
+                    style={{ fontSize: 'var(--t-caption)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="set-row">
@@ -107,7 +167,7 @@ export function TessAiSettings() {
           </div>
 
           <div className="set-row">
-            <div><div className="sr-label">Features</div><div className="sr-hint">Which Tess AI capabilities to enable.</div></div>
+            <div><div className="sr-label">Features</div><div className="sr-hint">Which {displayName} AI capabilities to enable.</div></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {(['summary', 'draft', 'triage', 'similar', 'ask'] as const).map((f) => (
                 <label key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 'var(--t-small)' }}>

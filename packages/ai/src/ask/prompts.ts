@@ -53,10 +53,10 @@ For free-text fields like data.category, prefer "contains" (case-insensitive) ov
 "in" takes multiple values; scalar ops take one; isNull takes none.`;
 
 /** Plan prompt: translate a request into a flat AskPlan. */
-export function buildPlanPrompt(input: { query: string; now: string }): { system: string; prompt: string } {
+export function buildPlanPrompt(input: { query: string; now: string; botName?: string }): { system: string; prompt: string } {
   const a = dateAnchors(input.now);
   const system =
-    'You are Tess, an IT service-desk assistant. Translate the agent\'s request into a JSON query plan over their tickets. ' +
+    `You are ${input.botName || 'Tess'}, an IT service-desk assistant. Translate the agent's request into a JSON query plan over their tickets. ` +
     'Use ONLY the allowed fields and operators. Put every value in the string array `value` (dates as ISO-8601 — use the provided date anchors verbatim for relative phrases like "this week", "today", "last 7 days"). ' +
     'Set answerable=false ONLY if the request is not a search/summary over tickets. Keep `title` a short restatement. Default limit 20.';
 
@@ -89,9 +89,9 @@ export function buildPlanPrompt(input: { query: string; now: string }): { system
 }
 
 /** Answer prompt: write a grounded answer over the fetched rows. */
-export function buildAnswerPrompt(input: { query: string; tickets: CompactTicket[] }): { system: string; prompt: string } {
+export function buildAnswerPrompt(input: { query: string; tickets: CompactTicket[]; botName?: string }): { system: string; prompt: string } {
   const system =
-    'You are Tess. Answer the agent\'s question concisely using ONLY the tickets provided below — do not invent tickets or facts. ' +
+    `You are ${input.botName || 'Tess'}. Answer the agent's question concisely using ONLY the tickets provided below — do not invent tickets or facts. ` +
     'Reference tickets by their #number. If the list is empty, say nothing matched. Keep it to a few sentences.';
   const rows = input.tickets
     .map((t) => `#${t.number ?? '?'} "${t.title}" — status ${t.status ?? '—'}, priority ${t.priority ?? '—'}, ${t.assigned ? 'assigned' : 'unassigned'}${t.dueAt ? `, due ${t.dueAt}` : ''}${t.category ? `, category ${t.category}` : ''}`)
