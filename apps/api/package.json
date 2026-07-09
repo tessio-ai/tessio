@@ -20,6 +20,7 @@
     "@tessio/ai": "workspace:*",
     "@tessio/db": "workspace:*",
     "@tessio/entitlements": "workspace:*",
+    "@tessio/license": "workspace:*",
     "@tessio/shared": "workspace:*",
     "@types/nodemailer": "^8.0.1",
     "ai": "^6.0.197",

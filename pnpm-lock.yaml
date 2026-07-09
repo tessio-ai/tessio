@@ -56,6 +56,9 @@ importers:
       '@tessio/entitlements':
         specifier: workspace:*
         version: link:../../packages/entitlements
+      '@tessio/license':
+        specifier: workspace:*
+        version: link:../../packages/license
       '@tessio/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -313,6 +316,34 @@ importers:
         specifier: ^3.0.0
         version: 3.2.6(@types/debug@4.1.13)(@types/node@25.9.1)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
 
+  ee/license-server:
+    dependencies:
+      '@tessio/entitlements':
+        specifier: workspace:*
+        version: link:../../packages/entitlements
+      '@tessio/license':
+        specifier: workspace:*
+        version: link:../../packages/license
+      fastify:
+        specifier: ^5.2.0
+        version: 5.8.5
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+    devDependencies:
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(tsx@4.22.4)(typescript@5.9.3)(yaml@2.9.0)
+      tsx:
+        specifier: ^4.19.0
+        version: 4.22.4
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@25.9.1)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
+
   ee/server:
     dependencies:
       '@fastify/cookie':
@@ -482,6 +513,19 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.7(react@19.2.7)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@25.9.1)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
+
+  packages/license:
+    dependencies:
+      '@tessio/entitlements':
+        specifier: workspace:*
+        version: link:../entitlements
+    devDependencies:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
