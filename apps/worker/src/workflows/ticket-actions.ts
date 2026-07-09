@@ -20,10 +20,13 @@ export interface TicketActionDeps {
 export async function applyTicketUpdate(
   deps: TicketActionDeps,
   ticketId: string,
-  set: { status?: string; priority?: string; assigneeId?: string; teamId?: string; data?: Record<string, unknown> },
+  set: { status?: string; priority?: string; assigneeId?: string; teamId?: string; parentId?: string; data?: Record<string, unknown> },
 ): Promise<{ ticket: Record<string, unknown>; updated: string[] }> {
   const before = await deps.getTicket(ticketId);
   if (!before) throw new Error(`Ticket ${ticketId} not found.`);
+
+  // Same guard the API write path enforces (the resource layer is bypassed here).
+  if (set.parentId != null && set.parentId === ticketId) throw new Error('A ticket cannot be its own parent.');
 
   const patch: Record<string, unknown> = { ...set };
   if (set.data) patch.data = { ...((before.data ?? {}) as Record<string, unknown>), ...set.data };

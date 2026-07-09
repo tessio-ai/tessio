@@ -9,13 +9,14 @@ export const NODE_META: Record<WorkflowNodeType, { label: string; icon: string; 
   branch: { label: 'Branch', icon: 'gitBranch', hue: '#d97706', blurb: 'Route down the first matching path' },
   join: { label: 'Join', icon: 'gitMerge', hue: '#d97706', blurb: 'Converge parallel paths' },
   update_ticket: { label: 'Update ticket', icon: 'edit', hue: '#2563eb', blurb: 'Edit status, priority, assignee, fields' },
+  create_subtask: { label: 'Create subtask', icon: 'gitBranch', hue: '#2563eb', blurb: 'Open a child ticket under this one' },
   add_comment: { label: 'Add comment', icon: 'message', hue: '#2563eb', blurb: 'Post a comment or internal note' },
   http_request: { label: 'HTTP request', icon: 'globe', hue: '#7c3aed', blurb: 'Call an external API' },
   script: { label: 'Script', icon: 'code', hue: '#0d9488', blurb: 'Run JavaScript against the run context' },
   slack_message: { label: 'Slack message', icon: 'send', hue: '#611f69', blurb: 'Post to the connected Slack channel' },
 };
 
-export const PALETTE: Exclude<WorkflowNodeType, 'trigger'>[] = ['branch', 'join', 'update_ticket', 'add_comment', 'slack_message', 'http_request', 'script'];
+export const PALETTE: Exclude<WorkflowNodeType, 'trigger'>[] = ['branch', 'join', 'update_ticket', 'create_subtask', 'add_comment', 'slack_message', 'http_request', 'script'];
 
 const TRIGGER_EVENT_LABELS: Record<string, string> = {
   created: 'created',
@@ -23,6 +24,7 @@ const TRIGGER_EVENT_LABELS: Record<string, string> = {
   priority: 'priority changed',
   assigned: 'assignee changed',
   team: 'team changed',
+  parent: 'parent changed',
   field_changed: 'field changed',
 };
 
@@ -56,11 +58,13 @@ export function summarize(node: WorkflowNode): string {
     case 'update_ticket': {
       const set = node.config.set ?? {};
       const parts = [
-        ...(['status', 'priority', 'assigneeId', 'teamId'] as const).filter((k) => set[k]).map((k) => k.replace('Id', '')),
+        ...(['status', 'priority', 'assigneeId', 'teamId', 'parentId'] as const).filter((k) => set[k]).map((k) => k.replace('Id', '')),
         ...Object.keys(set.data ?? {}),
       ];
       return parts.length ? `Set ${parts.join(', ')}` : 'No fields set yet';
     }
+    case 'create_subtask':
+      return node.config.title?.trim() ? `New subtask: ${firstLine(node.config.title)}` : 'Name the subtask';
     case 'add_comment':
       return node.config.internal ? 'Internal note' : 'Public comment';
     case 'http_request':
@@ -88,6 +92,7 @@ const DEFAULT_CONFIGS: Record<Exclude<WorkflowNodeType, 'trigger'>, WorkflowNode
   branch: {},
   join: { mode: 'all' },
   update_ticket: { set: {} },
+  create_subtask: { title: '' },
   add_comment: { body: '' },
   http_request: { method: 'GET', url: '' },
   script: { code: "// ctx = { trigger, ticket, nodes, run }\nreturn { ok: true };" },

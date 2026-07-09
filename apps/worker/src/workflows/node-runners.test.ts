@@ -16,6 +16,7 @@ function scope(): WorkflowScope {
 function deps(overrides: Partial<NodeExecDeps> = {}): NodeExecDeps {
   return {
     updateTicket: vi.fn(async () => ({ ticket: { id: 'tk1', status: 'resolved' }, updated: ['status'] })),
+    createSubtask: vi.fn(async () => ({ ticketId: 'tk2', number: 42 })),
     addComment: vi.fn(async () => ({ commentId: 'c9' })),
     fetchFn: vi.fn() as unknown as typeof fetch,
     runScript: vi.fn(async () => ({ ok: 1 })),
@@ -49,6 +50,34 @@ describe('executeNode', () => {
     expect(d.updateTicket).toHaveBeenCalledWith('tk1', { status: 'resolved', data: { reviewed: 'yes' } });
     expect(output).toEqual({ updated: ['status'] });
     expect(s.ticket.status).toBe('resolved');
+  });
+
+  it('update_ticket re-parents via parentId', async () => {
+    const d = deps();
+    const s = scope();
+    const n = node('update_ticket', { set: { parentId: 'tk9' } });
+    await executeNode(n, prepareNodeInput(n, s), s, d);
+    expect(d.updateTicket).toHaveBeenCalledWith('tk1', { parentId: 'tk9' });
+  });
+
+  it('create_subtask creates a child under the subject ticket, pruning empties', async () => {
+    const d = deps();
+    const s = scope();
+    const n = node('create_subtask', {
+      title: 'Follow up on {{ ticket.priority }}',
+      description: 'child of {{ ticket.id }}',
+      priority: '',
+      teamId: 'team7',
+      data: { area: 'billing' },
+    });
+    const { output } = await executeNode(n, prepareNodeInput(n, s), s, d);
+    expect(d.createSubtask).toHaveBeenCalledWith('tk1', {
+      title: 'Follow up on high',
+      description: 'child of tk1',
+      teamId: 'team7',
+      data: { area: 'billing' },
+    });
+    expect(output).toEqual({ ticketId: 'tk2', number: 42 });
   });
 
   it('add_comment posts the interpolated body', async () => {

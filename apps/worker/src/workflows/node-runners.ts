@@ -33,8 +33,13 @@ export interface NodeExecDeps {
   /** Apply a field patch to the run's ticket; returns the fresh row + the fields written. */
   updateTicket(
     ticketId: string,
-    set: { status?: string; priority?: string; assigneeId?: string; teamId?: string; data?: Record<string, unknown> },
+    set: { status?: string; priority?: string; assigneeId?: string; teamId?: string; parentId?: string; data?: Record<string, unknown> },
   ): Promise<{ ticket: Record<string, unknown>; updated: string[] }>;
+  /** Create a child ticket under `parentId` (inherits the parent's schema); returns the new row's id + number. */
+  createSubtask(
+    parentId: string,
+    fields: { title: string; description?: string; priority?: string; assigneeId?: string; teamId?: string; status?: string; data?: Record<string, unknown> },
+  ): Promise<{ ticketId: string; number: number }>;
   addComment(ticketId: string, body: string, internal: boolean): Promise<{ commentId: string }>;
   fetchFn: typeof fetch;
   runScript(code: string, ctx: unknown, timeoutMs: number): Promise<unknown>;
@@ -137,13 +142,26 @@ export async function executeNode(
     case 'update_ticket': {
       const { set } = input as { set: Record<string, unknown> };
       const patch: Record<string, unknown> = {};
-      for (const key of ['status', 'priority', 'assigneeId', 'teamId', 'data'] as const) {
+      for (const key of ['status', 'priority', 'assigneeId', 'teamId', 'parentId', 'data'] as const) {
         if (set?.[key] !== undefined && set[key] !== '') patch[key] = set[key];
       }
       if (Object.keys(patch).length === 0) return { output: { updated: [] } };
       const { ticket, updated } = await deps.updateTicket(ticketId(scope), patch);
       scope.ticket = ticket;
       return { output: { updated } };
+    }
+
+    case 'create_subtask': {
+      const cfg = input as Record<string, unknown>;
+      const fields: { title: string; description?: string; priority?: string; assigneeId?: string; teamId?: string; status?: string; data?: Record<string, unknown> } = {
+        title: typeof cfg.title === 'string' ? cfg.title : '',
+      };
+      for (const key of ['description', 'priority', 'assigneeId', 'teamId', 'status'] as const) {
+        if (cfg[key] !== undefined && cfg[key] !== '') fields[key] = cfg[key] as string;
+      }
+      if (cfg.data && typeof cfg.data === 'object') fields.data = cfg.data as Record<string, unknown>;
+      const { ticketId: subtaskId, number } = await deps.createSubtask(ticketId(scope), fields);
+      return { output: { ticketId: subtaskId, number } };
     }
 
     case 'add_comment': {
