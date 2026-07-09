@@ -43,8 +43,29 @@ The active edition is chosen at runtime by the `TESSIO_EDITION` environment vari
 
 Entitlements are reported by the central `@tessio/entitlements` package and enforced by a
 `requireFeature(...)` guard on the server and an `/api/v1/me/entitlements` response on the
-client. Signature-verified license keys are not implemented yet — today the switch is the
-env var above; a clean seam is left for real license-key verification later.
+client.
+
+### Signed license keys
+
+`TESSIO_EDITION` alone no longer unlocks a paid edition. At boot the API composition root
+(`apps/api/src/index.ts`) resolves the *effective* edition through
+`apps/api/src/license/` before anything reads the env var:
+
+- A **paid** edition (`enterprise`/`cloud`) requires a matching `TESSIO_LICENSE_KEY` — a
+  compact, Ed25519-signed token (`tessio-lic.v1.<payload>.<sig>`) the maintainers mint
+  offline with `apps/api/src/license/sign.ts`. Verification (`verify.ts`) uses only the
+  baked-in **public** key, checks the signature and expiry, and trusts the license's own
+  edition over the requested one.
+- Any missing, malformed, forged, or expired key **fails closed to `community`** — the ee/
+  loader and every `requireFeature` guard then see `community` and stay dark.
+- **Community** needs no key and is never downgraded.
+
+The private signing key is never in this repo; the baked-in public key in `verify.ts` is a
+placeholder to swap for the real one before shipping paid builds. Because Tessio is open
+source, a self-hoster with the `ee/` code could patch the check out — the signed key moves
+the bar from "set an env var" to "modify and rebuild the licensed source", which is the
+line that matters both technically and under `ee/LICENSE`. This is licensing, not DRM; seat
+counts are still never checked anywhere.
 
 ## AI and data
 

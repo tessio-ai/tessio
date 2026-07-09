@@ -751,18 +751,30 @@ function TeamDetail({ team, users }: { team: { id: string; name: string; emailAd
 
 /* ---------- License ---------- */
 function BillingSettings() {
+  const { data: ent } = useEntitlements();
+  const edition = ent?.edition ?? 'community';
+  const isPaid = edition === 'enterprise' || edition === 'cloud';
+  const editionLabel = edition === 'cloud' ? 'Cloud' : edition === 'enterprise' ? 'Enterprise' : 'Community';
+
   return (
     <>
       <h1 className="set-h">License</h1>
-      <p className="set-h-desc">How Tessio is licensed and what it costs.</p>
+      <p className="set-h-desc">How Tessio is licensed.</p>
 
       <div className="set-card">
         <div className="set-card-body" style={{ textAlign: 'center', padding: '48px 24px' }}>
-          <div style={{ fontSize: 'var(--t-h2)', fontWeight: 600, marginBottom: 6 }}>Free &amp; self-hosted</div>
-          <div style={{ color: 'var(--muted-foreground)', fontSize: 'var(--t-small)', maxWidth: 440, margin: '0 auto', lineHeight: 1.55 }}>
-            Tessio is self-hosted and free under the{' '}
-            <a href="https://www.elastic.co/licensing/elastic-license" target="_blank" rel="noreferrer">Elastic License 2.0</a>.
-            Every feature is included — there are no paid tiers, seats, or invoices.
+          <div style={{ fontSize: 'var(--t-h2)', fontWeight: 600, marginBottom: 6 }}>
+            {editionLabel} edition
+          </div>
+          <div style={{ color: 'var(--muted-foreground)', fontSize: 'var(--t-small)', maxWidth: 460, margin: '0 auto', lineHeight: 1.55 }}>
+            Tessio is <strong>open core</strong>. The self-hostable core product is free and open source under the{' '}
+            <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noreferrer">GNU AGPL-3.0</a>,
+            with <strong>no seat cap</strong> — unlimited agents in every edition.
+            {isPaid ? (
+              <> Enterprise features (SSO, audit log) are enabled on this instance under a commercial license.</>
+            ) : (
+              <> Enterprise add-ons (SSO, audit log) are available under a separate commercial license.</>
+            )}
           </div>
         </div>
       </div>
