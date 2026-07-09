@@ -38,6 +38,8 @@ export interface NodeExecDeps {
   addComment(ticketId: string, body: string, internal: boolean): Promise<{ commentId: string }>;
   fetchFn: typeof fetch;
   runScript(code: string, ctx: unknown, timeoutMs: number): Promise<unknown>;
+  /** Post to the org's connected Slack integration; throws when it isn't configured. */
+  sendSlack(text: string): Promise<void>;
 }
 
 /**
@@ -182,6 +184,12 @@ export async function executeNode(
       } finally {
         clearTimeout(timer);
       }
+    }
+
+    case 'slack_message': {
+      const { text } = input as { text: string };
+      await deps.sendSlack(text);
+      return { output: { ok: true } };
     }
 
     case 'script': {

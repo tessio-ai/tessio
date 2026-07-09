@@ -28,6 +28,7 @@ export * from './ticket-embeddings';
 export * from './workflows';
 export * from './reports';
 export * from './email-settings';
+export * from './slack-settings';
 export * from './notifications';
 export * from './processed-emails';
 export * from './sla-settings';

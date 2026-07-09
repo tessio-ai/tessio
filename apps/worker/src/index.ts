@@ -3,7 +3,7 @@
 import { loadEnv } from './load-env';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import { createDbClient, aiSettingsRepo, ticketsRepo, usersRepo, ticketAiTriageRepo, ticketEmbeddingsRepo, recordActivity, emailSettingsRepo, notificationsRepo, csatSettingsRepo, csatResponsesRepo } from '@tessio/db';
+import { createDbClient, aiSettingsRepo, ticketsRepo, usersRepo, ticketAiTriageRepo, ticketEmbeddingsRepo, recordActivity, emailSettingsRepo, slackSettingsRepo, notificationsRepo, csatSettingsRepo, csatResponsesRepo } from '@tessio/db';
 import {
   createTessClient,
   triageTicket,
@@ -24,6 +24,7 @@ import {
   NOTIFICATIONS_QUEUE,
   EMAIL_SEND_QUEUE,
   EMAIL_POLL_QUEUE,
+  SLACK_SEND_QUEUE,
   SCHEDULE_TICK_QUEUE,
   SLA_TICK_QUEUE,
   AGENT_OFFLINE_QUEUE,
@@ -33,6 +34,7 @@ import {
   type WorkflowRunJobData,
   type NotificationEventJob,
   type EmailSendJob,
+  type SlackSendJob,
 } from '@tessio/shared';
 import { Queue } from 'bullmq';
 import { processWorkflowEvent } from './workflows/process-event';
@@ -41,6 +43,8 @@ import { processNotificationEvent, type NotifyDeps } from './notifications/proce
 import { processCsatSurvey, type CsatDeps } from './notifications/csat';
 import { processEmailSend, type SendDeps } from './email/send';
 import { createMailer } from './email/mailer';
+import { processSlackSend } from './slack/send';
+import { buildSlackSendDeps } from './slack/wire';
 import { diskStorage } from './storage';
 import { listInboundOrgs, buildOrgPollDeps } from './email/wire';
 import { pollOrgInbound } from './email/poll';
@@ -121,8 +125,9 @@ const workflowEventDeps = buildProcessEventDeps(db, async (orgId, runId) => {
 });
 
 const emailSendQueue = new Queue<EmailSendJob>(EMAIL_SEND_QUEUE, { connection, defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 5000 } } });
+const slackSendQueue = new Queue<SlackSendJob>(SLACK_SEND_QUEUE, { connection, defaultJobOptions: { attempts: 3, backoff: { type: 'exponential', delay: 5000 } } });
 
-function buildNotifyDeps(emailQueue: Queue<EmailSendJob>): NotifyDeps {
+function buildNotifyDeps(emailQueue: Queue<EmailSendJob>, slackQueue: Queue<SlackSendJob>): NotifyDeps {
   return {
     loadTicket: async (orgId, ticketId) => {
       const t = await ticketsRepo(db).getById(orgId, ticketId);
@@ -168,6 +173,19 @@ function buildNotifyDeps(emailQueue: Queue<EmailSendJob>): NotifyDeps {
       if (!addr) return 'localhost';
       const at = addr.indexOf('@');
       return at >= 0 ? addr.slice(at + 1) : 'localhost';
+    },
+    orgSlack: async (orgId) => {
+      const row = await slackSettingsRepo(db).getOrCreate(orgId);
+      if (!row?.enabled || !row.webhookUrlCiphertext) return null;
+      return {
+        created: row.notifyCreated,
+        assigned: row.notifyAssigned,
+        status: row.notifyStatus,
+        commented: row.notifyCommented,
+      };
+    },
+    enqueueSlack: async (job) => {
+      await slackQueue.add('send', job);
     },
     siteUrl: process.env.TESSIO_SITE_URL ?? 'http://localhost',
   };
@@ -229,7 +247,7 @@ const workflowRunsWorker = new Worker<WorkflowRunJobData>(
 const notificationsWorker = new Worker<NotificationEventJob>(
   NOTIFICATIONS_QUEUE,
   async (job) => {
-    const notify = buildNotifyDeps(emailSendQueue);
+    const notify = buildNotifyDeps(emailSendQueue, slackSendQueue);
     await processNotificationEvent(job.data, notify);
     await processCsatSurvey(job.data, buildCsatDeps(notify));
   },
@@ -238,6 +256,11 @@ const notificationsWorker = new Worker<NotificationEventJob>(
 const emailSendWorker = new Worker<EmailSendJob>(
   EMAIL_SEND_QUEUE,
   async (job) => processEmailSend(job.data, buildSendDeps()),
+  { connection },
+);
+const slackSendWorker = new Worker<SlackSendJob>(
+  SLACK_SEND_QUEUE,
+  async (job) => processSlackSend(job.data, buildSlackSendDeps(db)),
   { connection },
 );
 
@@ -278,7 +301,14 @@ void scheduleTickQueue.add('tick', {}, { repeat: { every: Number(process.env.SCH
 
 // SLA tick — stamps breaches and sends notifications.
 const slaTickQueue = new Queue(SLA_TICK_QUEUE, { connection });
-const slaTickWorker = new Worker(SLA_TICK_QUEUE, async () => runSlaTick(buildSlaDeps(db)), { connection });
+const slaTickWorker = new Worker(
+  SLA_TICK_QUEUE,
+  async () => runSlaTick(buildSlaDeps(db, {
+    enqueue: async (job) => { await slackSendQueue.add('send', job); },
+    siteUrl: process.env.TESSIO_SITE_URL ?? 'http://localhost',
+  })),
+  { connection },
+);
 void slaTickQueue.add('tick', {}, { repeat: { every: Number(process.env.SLA_TICK_INTERVAL_MS ?? 60000) } });
 
 // Agent offline tick — flips devices with no recent heartbeat to offline.
@@ -293,11 +323,12 @@ workflowEventsWorker.on('ready', () => console.log(`worker listening on queue "$
 workflowRunsWorker.on('ready', () => console.log(`worker listening on queue "${WORKFLOW_RUNS_QUEUE}"`));
 notificationsWorker.on('ready', () => console.log(`worker listening on queue "${NOTIFICATIONS_QUEUE}"`));
 emailSendWorker.on('ready', () => console.log(`worker listening on queue "${EMAIL_SEND_QUEUE}"`));
+slackSendWorker.on('ready', () => console.log(`worker listening on queue "${SLACK_SEND_QUEUE}"`));
 emailPollWorker.on('ready', () => console.log(`worker listening on queue "${EMAIL_POLL_QUEUE}"`));
 scheduleTickWorker.on('ready', () => console.log(`worker listening on queue "${SCHEDULE_TICK_QUEUE}"`));
 slaTickWorker.on('ready', () => console.log(`worker listening on queue "${SLA_TICK_QUEUE}"`));
 agentOfflineWorker.on('ready', () => console.log(`worker listening on queue "${AGENT_OFFLINE_QUEUE}"`));
-for (const w of [exampleWorker, triageWorker, embedWorker, workflowEventsWorker, workflowRunsWorker, notificationsWorker, emailSendWorker, emailPollWorker, scheduleTickWorker, slaTickWorker, agentOfflineWorker]) {
+for (const w of [exampleWorker, triageWorker, embedWorker, workflowEventsWorker, workflowRunsWorker, notificationsWorker, emailSendWorker, slackSendWorker, emailPollWorker, scheduleTickWorker, slaTickWorker, agentOfflineWorker]) {
   w.on('failed', (job, err) => console.error(`job ${job?.id} failed`, err));
   w.on('error', (err) => console.error('worker error', err));
 }

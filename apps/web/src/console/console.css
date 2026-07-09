@@ -1149,11 +1149,118 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
 .cat-row .input-sm { padding: 4px 8px; font-size: 12px; }
 .cat-row .field-check { white-space: nowrap; }
 
-.rp-mine { max-width: 720px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-.rp-mine-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); }
-.rm-title { font-weight: 600; }
-.rm-sub { font-size: var(--t-small); color: var(--muted-foreground); }
+.rp-mine { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 10px; }
+.rp-mine-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.rp-mine-head h2 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -0.015em; }
+.rp-mine-count { display: grid; place-items: center; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 999px; font-size: var(--t-caption); font-weight: 700; color: var(--pa, var(--primary)); background: color-mix(in oklab, var(--pa, var(--primary)) 10%, var(--background)); border: 1px solid color-mix(in oklab, var(--pa, var(--primary)) 20%, transparent); }
+.rp-mine-row {
+  display: flex; align-items: center; gap: 13px; padding: 14px 16px;
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent); border-radius: 14px;
+  background: var(--background); font: inherit; color: var(--foreground); cursor: pointer; text-align: left;
+  box-shadow: 0 1px 2px rgba(16, 18, 28, 0.04);
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+.rp-mine-row:hover { transform: translateY(-1px); border-color: color-mix(in oklab, var(--pa, var(--primary)) 28%, var(--border)); box-shadow: 0 1px 2px rgba(16, 18, 28, 0.04), 0 12px 28px -14px rgba(16, 18, 28, 0.22); }
+.rp-mine-row:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.rm-ico { flex: none; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; color: var(--pa, var(--primary)); background: color-mix(in oklab, var(--pa, var(--primary)) 9%, var(--background)); border: 1px solid color-mix(in oklab, var(--pa, var(--primary)) 16%, transparent); }
+.rm-title { font-weight: 600; letter-spacing: -0.005em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rm-sub { font-size: var(--t-small); color: var(--muted-foreground); margin-top: 1px; }
 .rm-status { font-size: var(--t-small); text-transform: capitalize; color: var(--muted-foreground); }
+
+/* ---- Requester ticket progress ---- */
+.rp-status-chip { display: inline-flex; align-items: center; gap: 6px; flex: none; font-size: var(--t-caption); font-weight: 600; letter-spacing: .01em; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted-foreground); background: var(--background); }
+.rp-status-chip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px color-mix(in oklab, currentColor 18%, transparent); }
+.rp-status-chip[data-status='resolved'], .rp-status-chip[data-status='closed'] { color: var(--success); background: var(--success-tint); border-color: color-mix(in oklab, var(--success) 24%, transparent); }
+.rp-status-chip[data-status='in_progress'], .rp-status-chip[data-status='pending'], .rp-status-chip[data-status='on_hold'] { color: var(--warning); background: var(--warning-tint); border-color: color-mix(in oklab, var(--warning) 24%, transparent); }
+
+.rp-request { max-width: 760px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+.rp-request .rp-back { align-self: flex-start; margin-left: -8px; }
+.rp-req-head { display: flex; flex-direction: column; gap: 5px; padding: 2px 2px 4px; }
+.rp-req-headline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.rp-req-title { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; overflow-wrap: anywhere; }
+.rp-req-sub { font-size: var(--t-small); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+
+/* Cards share one calm elevation language. */
+.rp-steps, .rp-timeline-wrap, .rp-reply, .rp-closed-note {
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent); border-radius: 16px; background: var(--background);
+  box-shadow: 0 1px 2px rgba(16, 18, 28, 0.04), 0 16px 40px -24px rgba(16, 18, 28, 0.14);
+}
+
+.rp-steps { display: flex; margin: 0; padding: 22px 18px 18px; list-style: none; position: relative; overflow: hidden; }
+.rp-steps::after { content: ''; position: absolute; inset: 0 0 auto 0; height: 64px; background: linear-gradient(180deg, color-mix(in oklab, var(--pa, var(--primary)) 5%, transparent), transparent); pointer-events: none; }
+.rp-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; color: var(--faint-foreground); font-size: var(--t-small); }
+.rp-step::before { content: ''; position: absolute; top: 11px; right: 50%; width: calc(100% - 26px); margin-right: 13px; height: 3px; border-radius: 2px; background: var(--border); }
+.rp-step:first-child::before { display: none; }
+.rp-step-dot { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--background); border: 2px solid var(--border); position: relative; z-index: 1; color: #fff; transition: box-shadow .2s ease; }
+.rp-step.done, .rp-step.current { color: var(--foreground); }
+.rp-step.done::before, .rp-step.current::before { background: linear-gradient(90deg, color-mix(in oklab, var(--pa, var(--primary)) 75%, #8b5cf6), var(--pa, var(--primary))); }
+.rp-step.done .rp-step-dot { background: linear-gradient(150deg, var(--pa, var(--primary)), color-mix(in oklab, var(--pa, var(--primary)) 55%, #8b5cf6)); border-color: transparent; box-shadow: 0 4px 10px -3px color-mix(in oklab, var(--pa, var(--primary)) 55%, transparent); }
+.rp-step.current .rp-step-dot { border-color: var(--pa, var(--primary)); box-shadow: 0 0 0 5px color-mix(in oklab, var(--pa, var(--primary)) 15%, transparent); }
+.rp-step.current .rp-step-dot::after { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--pa, var(--primary)); }
+@media (prefers-reduced-motion: no-preference) {
+  .rp-step.current .rp-step-dot { animation: rp-step-pulse 2.4s ease-in-out infinite; }
+  @keyframes rp-step-pulse {
+    0%, 100% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--pa, var(--primary)) 15%, transparent); }
+    50% { box-shadow: 0 0 0 8px color-mix(in oklab, var(--pa, var(--primary)) 8%, transparent); }
+  }
+}
+.rp-step-label { letter-spacing: -0.005em; }
+.rp-step.current .rp-step-label { font-weight: 650; }
+
+.rp-timeline-wrap { padding: 20px; }
+.rp-timeline { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 16px; }
+
+/* System events read as quiet centered markers between messages. */
+.rp-tl-sys { display: flex; justify-content: center; }
+.rp-tl-sys-pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 13px; border-radius: 999px; font-size: var(--t-caption); font-weight: 550; color: var(--muted-foreground); background: color-mix(in oklab, var(--muted) 70%, var(--background)); border: 1px solid color-mix(in oklab, var(--border) 70%, transparent); }
+.rp-tl-sys-time { color: var(--faint-foreground); font-weight: 450; }
+
+/* Conversation as chat: support left, the requester's own messages right. */
+.rp-msg { display: flex; gap: 10px; max-width: min(85%, 560px); }
+.rp-msg.mine { align-self: flex-end; flex-direction: row-reverse; }
+.rp-msg-ava { flex: none; width: 30px; height: 30px; margin-top: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 10.5px; font-weight: 700; color: var(--muted-foreground); background: var(--muted); border: 1px solid var(--border); }
+.rp-msg.mine .rp-msg-ava { color: #fff; background: linear-gradient(150deg, var(--pa, var(--primary)), color-mix(in oklab, var(--pa, var(--primary)) 55%, #8b5cf6)); border-color: transparent; }
+.rp-msg-main { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.rp-msg.mine .rp-msg-main { align-items: flex-end; }
+.rp-msg-meta { display: flex; align-items: baseline; gap: 7px; font-size: var(--t-caption); color: var(--faint-foreground); padding: 0 4px; }
+.rp-msg-meta b { color: var(--muted-foreground); font-weight: 600; }
+.rp-msg-bubble { padding: 11px 14px; border-radius: 16px; border-top-left-radius: 5px; background: color-mix(in oklab, var(--muted) 80%, var(--background)); border: 1px solid color-mix(in oklab, var(--border) 70%, transparent); font-size: var(--t-small); line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rp-msg.mine .rp-msg-bubble {
+  border-radius: 16px; border-top-right-radius: 5px; border: none; color: #fff;
+  background: linear-gradient(150deg, var(--pa, var(--primary)), color-mix(in oklab, var(--pa, var(--primary)) 60%, #8b5cf6));
+  box-shadow: 0 8px 20px -10px color-mix(in oklab, var(--pa, var(--primary)) 60%, transparent);
+}
+
+/* Composer: one soft card, accent ring on focus, gradient send. */
+.rp-reply { display: flex; flex-direction: column; padding: 8px; transition: border-color .15s ease, box-shadow .15s ease; }
+.rp-reply:focus-within { border-color: color-mix(in oklab, var(--pa, var(--primary)) 45%, transparent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--pa, var(--primary)) 14%, transparent), 0 1px 2px rgba(16, 18, 28, 0.04); }
+.rp-reply-input { border: none; background: transparent; resize: none; min-height: 76px; padding: 10px 12px; font: inherit; font-size: var(--t-small); line-height: 1.55; color: var(--foreground); }
+.rp-reply-input:focus { outline: none; }
+.rp-reply-input::placeholder { color: var(--faint-foreground); }
+.rp-reply .portal-alert { margin: 0 8px 8px; }
+.rp-reply-bar { display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 12px; border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
+.rp-reply-hint { display: inline-flex; align-items: center; gap: 6px; font-size: var(--t-caption); color: var(--faint-foreground); }
+.rp-send {
+  display: inline-flex; align-items: center; gap: 7px; margin: 4px 2px 4px auto; padding: 9px 16px;
+  border: none; border-radius: 11px; font: inherit; font-size: var(--t-small); font-weight: 600; color: #fff; cursor: pointer;
+  background: linear-gradient(150deg, var(--pa, var(--primary)), color-mix(in oklab, var(--pa, var(--primary)) 60%, #8b5cf6));
+  box-shadow: 0 6px 16px -6px color-mix(in oklab, var(--pa, var(--primary)) 55%, transparent);
+  transition: filter .12s ease, transform .12s ease, opacity .12s ease;
+}
+.rp-send:hover:not(:disabled) { filter: brightness(1.07); transform: translateY(-1px); }
+.rp-send:disabled { opacity: .45; cursor: default; box-shadow: none; }
+.rp-send:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+.rp-closed-note { display: flex; align-items: center; gap: 11px; padding: 14px 16px; color: var(--muted-foreground); font-size: var(--t-small); background: linear-gradient(160deg, color-mix(in oklab, var(--success) 6%, var(--background)), var(--background)); }
+.rp-closed-ico { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--success); background: var(--success-tint); border: 1px solid color-mix(in oklab, var(--success) 22%, transparent); }
+.rp-closed-cta { margin-left: auto; }
+
+@media (max-width: 560px) {
+  .rp-step-label { display: none; }
+  .rp-step.current .rp-step-label { display: block; position: absolute; top: 38px; white-space: nowrap; }
+  .rp-steps { padding-bottom: 38px; }
+  .rp-msg { max-width: 95%; }
+}
 .portal-bool { display: inline-flex; align-items: center; gap: 6px; }
 
 /* Satisfaction survey (requester portal) */

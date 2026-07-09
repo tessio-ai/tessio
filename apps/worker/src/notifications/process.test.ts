@@ -12,6 +12,8 @@ function deps(over: Partial<NotifyDeps> = {}): NotifyDeps {
     enqueueEmail: vi.fn(async () => {}),
     orgEmailEnabled: vi.fn(async () => true),
     fromDomain: vi.fn(async () => 'desk.acme.com'),
+    orgSlack: vi.fn(async () => null),
+    enqueueSlack: vi.fn(async () => {}),
     siteUrl: 'https://desk.acme.com',
     ...over,
   };
@@ -35,4 +37,43 @@ it('does not email when org outbound is disabled', async () => {
   const d = deps({ orgEmailEnabled: vi.fn(async () => false) });
   await processNotificationEvent({ orgId: 'o1', event: { eventType: 'commented', recordId: 't1', actorId: 'agent-2', internal: false } }, d);
   expect(d.enqueueEmail).not.toHaveBeenCalled();
+});
+
+const SLACK_ALL = { created: true, assigned: true, status: true, commented: true };
+
+it('enqueues a Slack message when the org toggle for the event is on', async () => {
+  const d = deps({ orgSlack: vi.fn(async () => SLACK_ALL) });
+  await processNotificationEvent({ orgId: 'o1', event: { eventType: 'status', recordId: 't1', actorId: 'agent-2', changes: { status: 'resolved' } } }, d);
+  expect(d.enqueueSlack).toHaveBeenCalledWith(expect.objectContaining({
+    orgId: 'o1',
+    text: expect.stringContaining('#7 Printer'),
+    blocks: expect.any(Array),
+  }));
+});
+
+it('posts to Slack even when there are no per-user recipients', async () => {
+  // A ticket created by its own requester notifies nobody individually, but the channel still hears about it.
+  const d = deps({
+    orgSlack: vi.fn(async () => SLACK_ALL),
+    loadTicket: vi.fn(async () => ({ id: 't1', number: 7, title: 'Printer', requesterId: 'req-1', assigneeId: null })),
+  });
+  await processNotificationEvent({ orgId: 'o1', event: { eventType: 'created', recordId: 't1', actorId: 'req-1' } }, d);
+  expect(d.enqueueSlack).toHaveBeenCalled();
+});
+
+it('does not post to Slack when the event toggle is off or the integration is disabled', async () => {
+  const toggledOff = deps({ orgSlack: vi.fn(async () => ({ ...SLACK_ALL, commented: false })) });
+  await processNotificationEvent({ orgId: 'o1', event: { eventType: 'commented', recordId: 't1', actorId: 'agent-2' } }, toggledOff);
+  expect(toggledOff.enqueueSlack).not.toHaveBeenCalled();
+
+  const disabled = deps({ orgSlack: vi.fn(async () => null) });
+  await processNotificationEvent({ orgId: 'o1', event: { eventType: 'created', recordId: 't1' } }, disabled);
+  expect(disabled.enqueueSlack).not.toHaveBeenCalled();
+});
+
+it('does not post non-announceable events (priority/team/field changes) to Slack', async () => {
+  const d = deps({ orgSlack: vi.fn(async () => SLACK_ALL) });
+  await processNotificationEvent({ orgId: 'o1', event: { eventType: 'priority', recordId: 't1', changes: { priority: 'high' } } }, d);
+  expect(d.orgSlack).not.toHaveBeenCalled();
+  expect(d.enqueueSlack).not.toHaveBeenCalled();
 });

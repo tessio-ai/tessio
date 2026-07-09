@@ -10,6 +10,7 @@ import { listTeamSchemas, addTeamSchema, removeTeamSchema } from '../../api/team
 import { getAiSettings, updateAiSettings, testAiSettings, type UpdateAiSettingsInput } from '../../api/ai';
 import { listSecrets, createSecret, replaceSecret, deleteSecret } from '../../api/secrets';
 import { getEmailSettings, putEmailSettings, testSmtp, type UpdateEmailSettingsInput } from '../../api/email';
+import { getSlackSettings, putSlackSettings, testSlack, type UpdateSlackSettingsInput } from '../../api/slack';
 import { getNotificationPrefs, putNotificationPrefs, type NotificationPrefs } from '../../api/notifications';
 import { getSlaSettings, putSlaSettings, type UpdateSlaSettingsInput } from '../../api/sla';
 import { getCsatSettings, putCsatSettings, type UpdateCsatSettingsInput } from '../../api/csat';
@@ -143,6 +144,20 @@ export function useUpdateEmailSettings() {
 
 export function useTestSmtp() {
   return useMutation({ mutationFn: () => testSmtp() });
+}
+
+export const useSlackSettings = () => useQuery({ queryKey: ['slack-settings'], queryFn: getSlackSettings });
+
+export function useUpdateSlackSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: UpdateSlackSettingsInput) => putSlackSettings(patch),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['slack-settings'] }),
+  });
+}
+
+export function useTestSlack() {
+  return useMutation({ mutationFn: () => testSlack() });
 }
 
 export const useNotificationPrefs = () => useQuery({ queryKey: ['notification-prefs'], queryFn: getNotificationPrefs });

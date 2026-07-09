@@ -29,6 +29,7 @@ export * from './dashboard';
 export * from './workflows';
 export * from './reports';
 export { emailSettingsRepo } from './email-settings';
+export { slackSettingsRepo } from './slack-settings';
 export { notificationsRepo } from './notifications';
 export { processedEmailsRepo } from './processed-emails';
 export { slaSettingsRepo } from './sla-settings';

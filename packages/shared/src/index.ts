@@ -13,6 +13,7 @@ export * from './ticket-status';
 export * from './secrets';
 export * from './reports';
 export * from './email';
+export * from './slack';
 export * from './sla';
 export * from './csat';
 export * from './sso';

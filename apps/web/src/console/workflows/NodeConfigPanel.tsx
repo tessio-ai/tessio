@@ -635,6 +635,23 @@ export function NodeConfigPanel({ graph, selected, onChangeNode, onChangeEdge, o
         </>
       )}
 
+      {node.type === 'slack_message' && (
+        <>
+          <div className="wf-field">
+            <label>Message</label>
+            <TemplateTextarea
+              value={node.config.text}
+              placeholder={'Ticket #{{ ticket.number }} needs attention.\nSupports {{ ticket.priority }} templates.'}
+              onChange={(v) => setConfig({ text: v })}
+              variables={variables}
+            />
+          </div>
+          <p className="wf-panel-hint">
+            Posts to the Slack channel connected under Settings → Slack. The step fails if the integration is not configured.
+          </p>
+        </>
+      )}
+
       {node.type === 'script' && (
         <>
           <div className="wf-field">

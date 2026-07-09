@@ -14,6 +14,8 @@ import { PortalHero } from './portal/PortalHero';
 import { PortalCatalogView } from './portal/PortalCatalogView';
 import { PortalKnowledge } from './portal/PortalKnowledge';
 import { PortalArticle } from './portal/PortalArticle';
+import { RequestProgress } from './portal/RequestProgress';
+import { statusLabel } from './portal/progress';
 import type { ResolvedField } from '../api/portal';
 
 function isEmpty(v: unknown): boolean {
@@ -25,6 +27,7 @@ type PortalView =
   | { kind: 'form'; key: string }
   | { kind: 'submitted'; key: string; ticketNumber: number | null }
   | { kind: 'mine'; rate?: { ticketId: string; prefill?: number } }
+  | { kind: 'request'; id: string }
   | { kind: 'kb' }
   | { kind: 'article'; id: string };
 
@@ -319,9 +322,11 @@ function CsatPrompt({ ticketId, question, response, prefill }: { ticketId: strin
 
 const CSAT_RATEABLE = new Set(['resolved', 'closed']);
 
-function MyRequests({ rate }: { rate?: { ticketId: string; prefill?: number } }) {
+function MyRequests({ onOpen, rate }: { onOpen: (id: string) => void; rate?: { ticketId: string; prefill?: number } }) {
+  const { data: settings } = usePublicPortalSettings();
   const { data, isLoading, isError } = useMyTickets();
   const { data: csat } = useMyCsat();
+  const accent = { ['--pa']: settings?.accent ?? '#4f46e5' } as CSSProperties;
   if (isLoading) return <div className="rp-body"><p className="muted" style={{ padding: 24 }}>Loading…</p></div>;
   if (isError) return <div className="rp-body"><p className="danger" style={{ padding: 24 }}>Couldn't load your requests.</p></div>;
   const rows = data?.rows ?? [];
@@ -329,16 +334,22 @@ function MyRequests({ rate }: { rate?: { ticketId: string; prefill?: number } })
   const responseFor = (ticketId: string) => csat?.responses.find((r) => r.ticketId === ticketId);
   return (
     <div className="rp-body">
-      <div className="rp-mine">
+      <div className="rp-mine" style={accent}>
+        <div className="rp-mine-head">
+          <h2>Your requests</h2>
+          <span className="rp-mine-count">{rows.length}</span>
+        </div>
         {rows.map((t) => (
           <div className="rp-mine-item" key={t.id}>
-            <div className="rp-mine-row">
-              <div style={{ flex: 1, minWidth: 0 }}>
+            <button type="button" className="rp-mine-row" onClick={() => onOpen(t.id)}>
+              <span className="rm-ico" aria-hidden="true"><Icon name="ticket" size={17} /></span>
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
                 <div className="rm-title">{(t.data.title as string) || `Request #${t.number}`}</div>
                 <div className="rm-sub">#{t.number} · {new Date(t.createdAt).toLocaleDateString()}</div>
               </div>
-              <span className="rm-status">{t.status ?? 'open'}</span>
-            </div>
+              <span className="rp-status-chip" data-status={t.status ?? 'open'}>{statusLabel(t.status)}</span>
+              <Icon name="chevronRight" size={16} style={{ color: 'var(--faint-foreground)' }} />
+            </button>
             {csat?.enabled && CSAT_RATEABLE.has(t.status ?? '') && (
               <CsatPrompt
                 ticketId={t.id}
@@ -375,7 +386,8 @@ export function RequesterPortal() {
       {view.kind === 'catalog' && <RequesterCatalog onOpenForm={(key) => setView({ kind: 'form', key })} />}
       {view.kind === 'form' && <div className="rp-body"><PublicIntakePage formKey={view.key} onBack={() => setView({ kind: 'catalog' })} onSubmitted={(n) => setView({ kind: 'submitted', key: view.key, ticketNumber: n })} /></div>}
       {view.kind === 'submitted' && <Confirmation formKey={view.key} ticketNumber={view.ticketNumber} onMine={() => setView({ kind: 'mine' })} onAnother={() => setView({ kind: 'catalog' })} />}
-      {view.kind === 'mine' && <MyRequests rate={view.rate} />}
+      {view.kind === 'mine' && <MyRequests rate={view.rate} onOpen={(id) => setView({ kind: 'request', id })} />}
+      {view.kind === 'request' && <RequestProgress ticketId={view.id} onBack={() => setView({ kind: 'mine' })} onNewRequest={() => setView({ kind: 'catalog' })} />}
       {view.kind === 'kb' && <PortalKnowledge onOpen={(id) => setView({ kind: 'article', id })} onBack={() => setView({ kind: 'catalog' })} />}
       {view.kind === 'article' && <PortalArticle id={view.id} onBack={() => setView({ kind: 'kb' })} onOpenForm={(key) => setView({ kind: 'form', key })} />}
     </div>

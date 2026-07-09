@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { ticketsRepo, notificationsRepo, teamMembersRepo } from '@tessio/db';
+import { ticketsRepo, notificationsRepo, teamMembersRepo, slackSettingsRepo } from '@tessio/db';
 import type { Db } from '@tessio/db';
+import { buildSlackSlaMessage, type SlackSendJob } from '@tessio/shared';
 import type { SlaDeps, SlaNotice } from './tick';
 
-export function buildSlaDeps(db: Db): SlaDeps {
+export interface SlaSlackWiring {
+  enqueue(job: SlackSendJob): Promise<void>;
+  siteUrl: string;
+}
+
+export function buildSlaDeps(db: Db, slack?: SlaSlackWiring): SlaDeps {
   return {
     now: () => new Date(),
 
@@ -13,6 +19,15 @@ export function buildSlaDeps(db: Db): SlaDeps {
     stampBreach: (id, kind, at) => ticketsRepo(db).stampSlaBreach(id, kind, at),
 
     async notify(n: SlaNotice): Promise<void> {
+      // Channel-level Slack post — independent of the per-user feed rows below.
+      if (slack) {
+        const settings = await slackSettingsRepo(db).getOrCreate(n.orgId);
+        if (settings?.enabled && settings.notifySlaBreach) {
+          const msg = buildSlackSlaMessage({ number: n.number, kind: n.kind, url: `${slack.siteUrl}/#/tickets/${n.ticketId}` });
+          await slack.enqueue({ orgId: n.orgId, text: msg.text, blocks: msg.blocks });
+        }
+      }
+
       // Collect team member userIds (if teamId is set).
       let teamMemberUserIds: string[] = [];
       if (n.teamId) {
