@@ -13,7 +13,7 @@ import {
   useOrg, useUpdateOrg,
   usePortalSettings, useUpdatePortalSettings,
   useUsers, useCreateUser, useUpdateUser, useImportUsers,
-  useTeams, useCreateTeam, useDeleteTeam,
+  useTeams, useCreateTeam, useUpdateTeam, useDeleteTeam,
   useTeamMembers, useAddTeamMember, useRemoveTeamMember,
   useTeamSchemas, useAddTeamSchema, useRemoveTeamSchema,
   useEntitlements,
@@ -567,6 +567,7 @@ function TeamsSettings() {
   const deleteTeamMut = useDeleteTeam();
   const [newName, setNewName] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedTeam = teams.find((t) => t.id === selectedId) ?? null;
 
   const addTeam = () => {
     if (!newName.trim()) return;
@@ -592,7 +593,10 @@ function TeamsSettings() {
             onClick={() => setSelectedId(selectedId === t.id ? null : t.id)}>
             <div className="mem-person">
               <span className="avatar md" style={{ background: 'var(--muted-2)', color: 'var(--muted-foreground)' }}><Icon name="building" size={15} /></span>
-              <div className="mem-name">{t.name}</div>
+              <div style={{ minWidth: 0 }}>
+                <div className="mem-name">{t.name}</div>
+                {t.emailAddress && <div className="mem-email">{t.emailAddress}</div>}
+              </div>
             </div>
             <div className="mem-last">{t.memberCount} member{t.memberCount === 1 ? '' : 's'}</div>
             <div className="mem-last">{t.schemaCount} type{t.schemaCount === 1 ? '' : 's'}</div>
@@ -601,12 +605,13 @@ function TeamsSettings() {
         ))}
       </div>
 
-      {selectedId && <TeamDetail teamId={selectedId} users={users} />}
+      {selectedTeam && <TeamDetail key={selectedTeam.id} team={selectedTeam} users={users} />}
     </>
   );
 }
 
-function TeamDetail({ teamId, users }: { teamId: string; users: { id: string; name: string; email: string; role: string }[] }) {
+function TeamDetail({ team, users }: { team: { id: string; name: string; emailAddress: string | null; emailName: string | null }; users: { id: string; name: string; email: string; role: string }[] }) {
+  const teamId = team.id;
   const { data: members = [] } = useTeamMembers(teamId);
   const addMember = useAddTeamMember(teamId);
   const removeMember = useRemoveTeamMember(teamId);
@@ -623,6 +628,15 @@ function TeamDetail({ teamId, users }: { teamId: string; users: { id: string; na
 
   const [addingMember, setAddingMember] = useState(false);
   const [addingSchema, setAddingSchema] = useState(false);
+
+  const updateTeamMut = useUpdateTeam();
+  const [emailAddress, setEmailAddress] = useState(team.emailAddress ?? '');
+  const [emailName, setEmailName] = useState(team.emailName ?? '');
+  const emailDirty = emailAddress.trim() !== (team.emailAddress ?? '') || emailName.trim() !== (team.emailName ?? '');
+  const saveEmail = () => updateTeamMut.mutate({
+    id: teamId,
+    patch: { emailAddress: emailAddress.trim().toLowerCase() || null, emailName: emailName.trim() || null },
+  });
 
   return (
     <div className="team-detail">
@@ -702,6 +716,25 @@ function TeamDetail({ teamId, users }: { teamId: string; users: { id: string; na
                 })}
               </div>
             )}
+          </div>
+
+          <div className="team-detail-section" style={{ marginTop: 24 }}>
+            <div className="team-detail-section-head">
+              <div className="team-detail-section-title">Email</div>
+            </div>
+            <div className="set-row">
+              <div><div className="sr-label">Team email address</div><div className="sr-hint">Outgoing mail for this team's tickets is sent from this address, and new mail sent to it routes here. Leave blank to use the workspace default.</div></div>
+              <input className="input" value={emailAddress} placeholder="hr@example.com" onChange={(e) => setEmailAddress(e.target.value)} style={{ maxWidth: 320 }} type="email" />
+            </div>
+            <div className="set-row">
+              <div><div className="sr-label">From name</div><div className="sr-hint">Display name for outgoing mail (e.g. "HR Desk").</div></div>
+              <input className="input" value={emailName} placeholder="HR Desk" onChange={(e) => setEmailName(e.target.value)} style={{ maxWidth: 320 }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+              <Button variant="primary" size="sm" onClick={saveEmail} disabled={!emailDirty || updateTeamMut.isPending}>
+                {updateTeamMut.isPending ? 'Saving…' : 'Save email settings'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

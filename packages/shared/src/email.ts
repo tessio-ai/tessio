@@ -14,6 +14,8 @@ export interface NotificationEventJob {
 }
 export interface EmailSendJob {
   orgId: string;
+  /** Team whose address should be used as the From (falls back to org settings). */
+  teamId?: string | null;
   to: string;
   subject: string;
   text: string;
