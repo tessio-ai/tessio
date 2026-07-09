@@ -24,6 +24,8 @@ export interface TicketRow {
   createdAt: string;
   updatedAt: string;
   formId: string | null;
+  /** Parent ticket id when this ticket is a subtask; null for top-level tickets. */
+  parentId: string | null;
   /** SLA fields — present when SLA is configured; null otherwise. */
   slaResponseDueAt: string | null;
   slaResolutionDueAt: string | null;

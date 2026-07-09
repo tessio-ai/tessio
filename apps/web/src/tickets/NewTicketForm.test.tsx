@@ -26,7 +26,7 @@ beforeEach(() => {
       definition: { fields: [{ key: 'title', label: 'Title', type: 'text', order: 0, required: true, width: 'full' }] },
     },
   ]);
-  vi.spyOn(ticketsApi, 'createTicket').mockResolvedValue({ id: 't9', number: 5, status: null, priority: null, requesterId: null, assigneeId: null, teamId: null, dueAt: null, schemaId: 'sch1', schemaVersion: 2, data: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', formId: null, slaResponseDueAt: null, slaResolutionDueAt: null, firstRespondedAt: null, slaResponseBreachedAt: null, slaResolutionBreachedAt: null });
+  vi.spyOn(ticketsApi, 'createTicket').mockResolvedValue({ id: 't9', number: 5, status: null, priority: null, requesterId: null, assigneeId: null, teamId: null, dueAt: null, schemaId: 'sch1', schemaVersion: 2, data: {}, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', formId: null, parentId: null, slaResponseDueAt: null, slaResolutionDueAt: null, firstRespondedAt: null, slaResponseBreachedAt: null, slaResolutionBreachedAt: null });
 });
 afterEach(() => {
   vi.restoreAllMocks();

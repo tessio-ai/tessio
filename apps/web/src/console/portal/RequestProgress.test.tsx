@@ -21,7 +21,7 @@ function wrap(node: ReactNode) {
 const ticket = (over: Partial<TicketRow> = {}): TicketRow => ({
   id: 't1', number: 7, status: 'in_progress', priority: null, requesterId: 'u1', assigneeId: null, teamId: null,
   dueAt: null, schemaId: 's1', schemaVersion: 1, data: { title: 'Broken printer' },
-  createdAt: '2026-07-01T10:00:00Z', updatedAt: '2026-07-02T10:00:00Z', formId: 'f1',
+  createdAt: '2026-07-01T10:00:00Z', updatedAt: '2026-07-02T10:00:00Z', formId: 'f1', parentId: null,
   slaResponseDueAt: null, slaResolutionDueAt: null, firstRespondedAt: null, slaResponseBreachedAt: null, slaResolutionBreachedAt: null,
   ...over,
 });

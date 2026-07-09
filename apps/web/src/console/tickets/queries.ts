@@ -8,6 +8,7 @@ import {
   createTicket,
   updateTicket,
   deleteTicket,
+  listTicketSubtasks,
   type TicketQuery,
   type CreateTicketInput,
   type UpdateTicketInput,
@@ -98,6 +99,9 @@ export function useUpdateTicket(id: string) {
       qc.invalidateQueries({ queryKey: ['ticket', id] });
       qc.invalidateQueries({ queryKey: ['tickets'] });
       qc.invalidateQueries({ queryKey: ['ticket-activity', id] });
+      // A status/parent change on this ticket may change how it renders in a
+      // parent's subtask list; refresh all subtask lists to be safe.
+      qc.invalidateQueries({ queryKey: ['ticket-subtasks'] });
     },
   });
 }
@@ -117,6 +121,25 @@ export function useAddComment(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ticket-comments', id] });
       qc.invalidateQueries({ queryKey: ['ticket-activity', id] });
+    },
+  });
+}
+
+export const useTicketSubtasks = (id: string | null) =>
+  useQuery({
+    queryKey: ['ticket-subtasks', id],
+    queryFn: () => listTicketSubtasks(id as string),
+    enabled: !!id,
+  });
+
+/** Create a subtask under `parentId`, refreshing that parent's subtask list. */
+export function useCreateSubtask(parentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: CreateTicketInput) => createTicket({ ...b, parentId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ticket-subtasks', parentId] });
+      qc.invalidateQueries({ queryKey: ['tickets'] });
     },
   });
 }

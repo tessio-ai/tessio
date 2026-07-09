@@ -30,6 +30,8 @@ function mocks() {
   vi.spyOn(commentsApi, 'listTicketComments').mockResolvedValue([] as never);
   vi.spyOn(schemasApi, 'listSchemas').mockResolvedValue([{ id: 's1', kind: 'ticket', key: 'it', name: 'IT Ticket', version: 1, status: 'published', definition: { fields: [] } }] as never);
   vi.spyOn(linksApi, 'listTicketLinks').mockResolvedValue([] as never);
+  vi.spyOn(ticketsApi, 'listTicketSubtasks').mockResolvedValue([] as never);
+  vi.spyOn(ticketsApi, 'queryTickets').mockResolvedValue({ rows: [], nextCursor: null } as never);
   vi.spyOn(teamsApi, 'listTeams').mockResolvedValue([{ id: 'team1', name: 'IT Ops', createdAt: '' }] as never);
   vi.spyOn(attachmentsApi, 'listTicketAttachments').mockResolvedValue([{ id: 'att1', filename: 'screenshot.png', size: 2048, mime: 'image/png', uploadedBy: 'u1', createdAt: '' }] as never);
   vi.spyOn(activityApi, 'listTicketActivity').mockResolvedValue([
@@ -99,6 +101,22 @@ describe('TicketDetail (restored)', () => {
     const file = new File(['hi'], 'note.txt', { type: 'text/plain' });
     await userEvent.upload(screen.getByLabelText(/upload file/i), file);
     await waitFor(() => expect(up).toHaveBeenCalledWith('t1', file));
+  });
+
+  it('lists subtasks and creates a new one under the parent', async () => {
+    mocks();
+    vi.spyOn(ticketsApi, 'listTicketSubtasks').mockResolvedValue([
+      { id: 'c1', number: 143, status: 'open', priority: 'medium', requesterId: null, assigneeId: null, teamId: null, dueAt: null, schemaId: 's1', schemaVersion: 1, data: { title: 'Order replacement toner' }, createdAt: '', updatedAt: '', formId: null, parentId: 't1', slaResponseDueAt: null, slaResolutionDueAt: null, firstRespondedAt: null, slaResponseBreachedAt: null, slaResolutionBreachedAt: null },
+    ] as never);
+    const create = vi.spyOn(ticketsApi, 'createTicket').mockResolvedValue({ id: 'c2' } as never);
+    render(wrap(<TicketDetail ticketId="t1" go={vi.fn()} addToast={vi.fn()} />));
+    await waitFor(() => expect(screen.getByText('Printer offline')).toBeInTheDocument());
+    await userEvent.click(screen.getByText('Subtasks'));
+    await waitFor(() => expect(screen.getByText('Order replacement toner')).toBeInTheDocument());
+    expect(screen.getByText(/0 of 1 done/)).toBeInTheDocument();
+    await userEvent.type(screen.getByPlaceholderText(/add a subtask/i), 'Escalate to vendor');
+    await userEvent.click(screen.getByRole('button', { name: /^add$/i }));
+    expect(create).toHaveBeenCalledWith({ schemaId: 's1', schemaVersion: 1, status: 'open', data: { title: 'Escalate to vendor' }, parentId: 't1' });
   });
 
   it('back navigates to the list', async () => {

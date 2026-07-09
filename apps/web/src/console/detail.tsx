@@ -8,7 +8,7 @@ import { Orb, AgentSummary, AiDraftCard, AiInsights } from './agent';
 import { useBot } from './bot';
 import { STATUS_MAP, PRIORITY_MAP, TYPE_MAP } from './data';
 import type { Route } from './shell';
-import { useTicket, useTickets, useUsers, useTicketSchemas, useTicketComments, useAddComment, useUpdateTicket, useTicketLinks, useAddTicketLink, useDeleteTicketLink, useTeams, useTicketActivity, useTicketAttachments, useUploadAttachment, useDeleteAttachment } from './tickets/queries';
+import { useTicket, useTickets, useUsers, useTicketSchemas, useTicketComments, useAddComment, useUpdateTicket, useTicketLinks, useAddTicketLink, useDeleteTicketLink, useTeams, useTicketActivity, useTicketAttachments, useUploadAttachment, useDeleteAttachment, useTicketSubtasks, useCreateSubtask } from './tickets/queries';
 import { useAssets } from './assets/queries';
 import { downloadAttachment } from '../api/attachments';
 import { toDisplayTicket, usersById } from './tickets/adapt';
@@ -19,7 +19,7 @@ import { streamTicketSummary, streamTicketDraft } from '../api/ai';
 
 type Go = (screen: string, extra?: Partial<Route>) => void;
 
-const TL_ICON: Record<string, string> = { created: 'plus', assigned: 'user', status: 'refresh', priority: 'alert', comment: 'message', team: 'building', field_changed: 'edit', csat_submitted: 'star' };
+const TL_ICON: Record<string, string> = { created: 'plus', assigned: 'user', status: 'refresh', priority: 'alert', comment: 'message', team: 'building', field_changed: 'edit', csat_submitted: 'star', parent: 'gitBranch' };
 
 function PropRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -150,6 +150,7 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
   const [showDraft, setShowDraft] = useState(true);
   const [linkOpen, setLinkOpen] = useState(false);
   const [editingDetails, setEditingDetails] = useState(false);
+  const [newSubtask, setNewSubtask] = useState('');
   const [aiSummary, setAiSummary] = useState('');
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [aiDraft, setAiDraft] = useState('');
@@ -172,6 +173,8 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
   const commentsQ = useTicketComments(ticketId);
   const activityQ = useTicketActivity(ticketId);
   const linksQ = useTicketLinks(ticketId);
+  const subtasksQ = useTicketSubtasks(ticketId);
+  const createSubtask = useCreateSubtask(ticketId);
   const allTicketsQ = useTickets({ limit: 200 });
   const attachmentsQ = useTicketAttachments(ticketId);
   const upload = useUploadAttachment(ticketId);
@@ -205,6 +208,10 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
         return <><b>{who.name}</b> set priority <b>{PRIORITY_MAP[ev.from]?.label ?? ev.from}</b> → <b>{PRIORITY_MAP[ev.to]?.label ?? ev.to}</b></>;
       case 'team':
         return <><b>{who.name}</b> {ev.to ? <>routed to <b>{teamsById[ev.to]?.name ?? 'a team'}</b></> : <>cleared the team</>}</>;
+      case 'parent': {
+        const parent = ev.to ? (allTicketsQ.data?.rows ?? []).find((t) => t.id === ev.to) : null;
+        return <><b>{who.name}</b> {ev.to ? <>made this a subtask of <b>{parent ? `#${parent.number}` : 'another ticket'}</b></> : <>detached this from its parent</>}</>;
+      }
       case 'field_changed': {
         const fieldLabel = (schema?.definition.fields ?? []).find((f) => f.key === ev.field)?.label ?? ev.field ?? 'a field';
         return <><b>{who.name}</b> updated <b>{fieldLabel}</b>{ev.from && ev.to ? <> from <b>{String(ev.from)}</b> → <b>{String(ev.to)}</b></> : ev.to ? <> to <b>{String(ev.to)}</b></> : <> (cleared)</>}</>;
@@ -305,9 +312,24 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
   const TABS = [
     { id: 'activity', label: 'Activity', icon: 'activity' },
     { id: 'details', label: 'Details', icon: 'form' },
+    { id: 'subtasks', label: 'Subtasks', icon: 'gitBranch' },
     { id: 'linked', label: 'Linked', icon: 'link' },
     { id: 'files', label: 'Files', icon: 'paperclip' },
   ];
+
+  const subtasks = subtasksQ.data ?? [];
+  const subtasksDone = subtasks.filter((s) => ['resolved', 'closed'].includes(s.status ?? '')).length;
+
+  const addSubtask = () => {
+    const title = newSubtask.trim();
+    if (!title || createSubtask.isPending) return;
+    createSubtask.mutate(
+      { schemaId: ticketQ.data!.schemaId, schemaVersion: ticketQ.data!.schemaVersion, status: 'open', data: { title } },
+      { onSuccess: () => { setNewSubtask(''); addToast('Subtask created'); } },
+    );
+  };
+
+  const parentTicket = ticket.parentId ? (allTicketsQ.data?.rows ?? []).find((t) => t.id === ticket.parentId) : null;
 
   return (
     <div className="detail">
@@ -318,6 +340,12 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
             <span>/</span>
             <span className="mono">#{ticket.number}</span>
             <TypeBadge type={ticket.type} />
+            {ticket.parentId && (
+              <span className="linkbtn" style={{ color: 'var(--muted-foreground)', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => go('tickets', { ticketId: ticket.parentId! })}>
+                <Icon name="gitBranch" size={13} />
+                Subtask of {parentTicket ? `#${parentTicket.number}` : 'a ticket'}
+              </span>
+            )}
           </div>
           <h1 className="dh-title">{ticket.title}</h1>
           <div className="dh-meta">
@@ -335,6 +363,7 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
               <div key={t.id} className={'viewtab' + (tab === t.id ? ' active' : '')} onClick={() => setTab(t.id)}>
                 <Icon name={t.icon} size={14} />
                 {t.label}
+                {t.id === 'subtasks' && <span className="vt-count">{subtasks.length || 0}</span>}
                 {t.id === 'linked' && <span className="vt-count">{(linksQ.data ?? []).length || 0}</span>}
                 {t.id === 'files' && <span className="vt-count">{(attachmentsQ.data ?? []).length || 0}</span>}
               </div>
@@ -472,6 +501,45 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+          {tab === 'subtasks' && (
+            <div className="timeline" style={{ display: 'block' }}>
+              <div className="card" style={{ maxWidth: 640 }}>
+                {subtasks.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--border)', color: 'var(--muted-foreground)', fontSize: 'var(--t-caption)' }}>
+                    <Icon name="checkCircle" size={14} />
+                    <span>{subtasksDone} of {subtasks.length} done</span>
+                  </div>
+                )}
+                {subtasks.length === 0 ? (
+                  <div className="muted" style={{ padding: 12 }}>No subtasks yet. Break this ticket down into smaller pieces of work below.</div>
+                ) : subtasks.map((s) => {
+                  const done = ['resolved', 'closed'].includes(s.status ?? '');
+                  return (
+                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                      <span className="t-ico" style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--muted)', color: 'var(--muted-foreground)', display: 'grid', placeItems: 'center', cursor: 'pointer' }} onClick={() => go('tickets', { ticketId: s.id })}><Icon name={done ? 'checkCircle' : 'ticket'} size={16} /></span>
+                      <div style={{ flex: 1, cursor: 'pointer', minWidth: 0 }} onClick={() => go('tickets', { ticketId: s.id })}>
+                        <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: done ? 'line-through' : 'none', color: done ? 'var(--muted-foreground)' : 'var(--foreground)' }}>
+                          <span className="mono" style={{ color: 'var(--muted-foreground)', marginRight: 6 }}>#{s.number}</span>
+                          {(s.data as Record<string, unknown>).title as string ?? 'Untitled'}
+                        </div>
+                      </div>
+                      <StatusPill status={s.status ?? 'open'} />
+                    </div>
+                  );
+                })}
+                <div style={{ borderTop: subtasks.length > 0 ? '1px solid var(--border)' : 'none', padding: 12, display: 'flex', gap: 8 }}>
+                  <input
+                    placeholder="Add a subtask…"
+                    value={newSubtask}
+                    onChange={(e) => setNewSubtask(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') addSubtask(); }}
+                    style={{ flex: 1, padding: '6px 8px', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', background: 'var(--surface)', color: 'var(--foreground)', font: 'inherit', fontSize: 'var(--t-small)', outline: 'none' }}
+                  />
+                  <Button variant="primary" size="sm" icon="plus" onClick={addSubtask} disabled={!newSubtask.trim() || createSubtask.isPending}>Add</Button>
+                </div>
               </div>
             </div>
           )}

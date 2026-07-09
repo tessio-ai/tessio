@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Db } from '@tessio/db';
 import type { Storage } from './storage/storage';
 import { registerResourceRoutes } from './resources/resource-routes';
-import { ticketsResource } from './resources/tickets';
+import { ticketsResource, registerTicketSubtaskRoutes } from './resources/tickets';
 import { assetsResource } from './resources/assets';
 import { kbArticlesResource } from './resources/kb-articles';
 import { formSubmissionsResource } from './resources/form-submissions';
@@ -90,6 +90,8 @@ export function registerV1Routes(
     registerCommentRoutes(staff, db, 'assets', 'asset');
     registerCommentRoutes(staff, db, 'kb-articles', 'kb_article');
     registerCommentRoutes(staff, db, 'form-submissions', 'form_submission');
+
+    registerTicketSubtaskRoutes(staff, db);
 
     registerLinkRoutes(staff, db, 'tickets', 'ticket');
     registerLinkRoutes(staff, db, 'assets', 'asset');
