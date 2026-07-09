@@ -234,4 +234,61 @@ describe('tickets resource', () => {
     const row = await ticketsRepo(db).getById(orgId, created.id);
     expect(row?.firstRespondedAt).toBeNull();
   });
+
+  it('creates a subtask and lists it under its parent', async () => {
+    const { headers, schemaId, schemaVersion } = await ctx();
+    const parent = (await app.inject({ method: 'POST', url: '/api/v1/tickets', headers, payload: { schemaId, schemaVersion, data: { title: 'Onboard new hire' } } })).json();
+    const child = (await app.inject({
+      method: 'POST',
+      url: '/api/v1/tickets',
+      headers,
+      payload: { schemaId, schemaVersion, status: 'open', parentId: parent.id, data: { title: 'Provision laptop' } },
+    })).json();
+    expect(child.parentId).toBe(parent.id);
+
+    const res = await app.inject({ method: 'GET', url: `/api/v1/tickets/${parent.id}/subtasks`, headers });
+    expect(res.statusCode).toBe(200);
+    const subtasks = res.json();
+    expect(subtasks).toHaveLength(1);
+    expect(subtasks[0].id).toBe(child.id);
+  });
+
+  it('returns 404 listing subtasks of a missing ticket', async () => {
+    const { headers } = await ctx();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/tickets/00000000-0000-0000-0000-000000000000/subtasks', headers });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('re-parents a ticket via PATCH and records a parent activity event', async () => {
+    const { headers, orgId, schemaId, schemaVersion } = await ctx();
+    const parent = (await app.inject({ method: 'POST', url: '/api/v1/tickets', headers, payload: { schemaId, schemaVersion } })).json();
+    const child = (await app.inject({ method: 'POST', url: '/api/v1/tickets', headers, payload: { schemaId, schemaVersion } })).json();
+
+    const patched = await app.inject({ method: 'PATCH', url: `/api/v1/tickets/${child.id}`, headers, payload: { parentId: parent.id } });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().parentId).toBe(parent.id);
+
+    const events = await listActivity(db, orgId, 'ticket', child.id);
+    expect(events.some((e) => e.eventType === 'parent')).toBe(true);
+
+    // Detaching sends parentId: null.
+    const detached = await app.inject({ method: 'PATCH', url: `/api/v1/tickets/${child.id}`, headers, payload: { parentId: null } });
+    expect(detached.statusCode).toBe(200);
+    expect(detached.json().parentId).toBeNull();
+  });
+
+  it('rejects making a ticket its own parent', async () => {
+    const { headers, schemaId, schemaVersion } = await ctx();
+    const t = (await app.inject({ method: 'POST', url: '/api/v1/tickets', headers, payload: { schemaId, schemaVersion } })).json();
+    const res = await app.inject({ method: 'PATCH', url: `/api/v1/tickets/${t.id}`, headers, payload: { parentId: t.id } });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('forbids requesters from listing subtasks', async () => {
+    const { headers, schemaId, schemaVersion, orgId } = await ctx();
+    const parent = (await app.inject({ method: 'POST', url: '/api/v1/tickets', headers, payload: { schemaId, schemaVersion } })).json();
+    const { cookie } = await loginAs(app, db, { orgId, role: 'requester' });
+    const res = await app.inject({ method: 'GET', url: `/api/v1/tickets/${parent.id}/subtasks`, headers: { cookie } });
+    expect(res.statusCode).toBe(403);
+  });
 });

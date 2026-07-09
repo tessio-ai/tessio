@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { and, eq, isNull, or, lt } from 'drizzle-orm';
+import { and, asc, eq, isNull, or, lt } from 'drizzle-orm';
 import { tickets } from '../schema';
 import { createRecordRepository } from './records';
 import { assignNextNumber } from './counters';
@@ -19,6 +19,14 @@ export function ticketsRepo(db: Db) {
     async create(values: Omit<TicketInsert, 'number'>) {
       const number = await assignNextNumber(db, values.orgId, 'ticket');
       return base.create({ ...values, number });
+    },
+    /** List a ticket's direct subtasks (non-deleted children), oldest first by number. */
+    async listSubtasks(orgId: string, parentId: string) {
+      return db
+        .select()
+        .from(tickets)
+        .where(and(eq(tickets.orgId, orgId), eq(tickets.parentId, parentId), isNull(tickets.deletedAt)))
+        .orderBy(asc(tickets.number));
     },
     /** Look up a ticket by its org-scoped human-readable number. Returns undefined if not found. */
     async getByNumber(orgId: string, number: number) {
@@ -59,6 +67,7 @@ const TRACKED_TICKET_FIELDS: Record<string, string> = {
   assigneeId: 'assigned',
   priority: 'priority',
   teamId: 'team',
+  parentId: 'parent',
 };
 
 /**

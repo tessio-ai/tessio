@@ -8,7 +8,7 @@ import type { UserRow } from '../../api/users';
 const u: UserRow = { id: 'u1', email: 'sam@x.io', name: 'Sam Rivera', role: 'agent', status: 'active', createdAt: '' };
 const row: TicketRow = { id: 't1', number: 142, status: 'open', priority: 'high', requesterId: 'r1', assigneeId: 'u1',
   teamId: null, dueAt: null, schemaId: 's1', schemaVersion: 1, data: { title: 'Printer offline', category: 'Hardware' },
-  createdAt: '2026-06-01T00:00:00.000Z', updatedAt: '2026-06-02T00:00:00.000Z', formId: null,
+  createdAt: '2026-06-01T00:00:00.000Z', updatedAt: '2026-06-02T00:00:00.000Z', formId: null, parentId: null,
   slaResponseDueAt: null, slaResolutionDueAt: null, firstRespondedAt: null,
   slaResponseBreachedAt: null, slaResolutionBreachedAt: null };
 

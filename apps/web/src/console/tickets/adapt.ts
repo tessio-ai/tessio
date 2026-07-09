@@ -8,6 +8,7 @@ export interface DisplayUser { id: string; name: string; initials: string; color
 export interface DisplayTicket {
   id: string; number: number; type: string; title: string; status: string; priority: string;
   requesterId: string | null; assigneeId: string | null; teamId: string | null;
+  parentId: string | null;
   updatedAt: number; createdAt: number; dueAt: number | null;
   data: Record<string, string>;
   slaResponseDueAt: string | null;
@@ -46,6 +47,7 @@ export function toDisplayTicket(row: TicketRow, typeKeyById: Record<string, stri
     requesterId: row.requesterId,
     assigneeId: row.assigneeId,
     teamId: row.teamId,
+    parentId: row.parentId ?? null,
     updatedAt: ms(row.updatedAt),
     createdAt: ms(row.createdAt),
     dueAt: row.dueAt ? ms(row.dueAt) : null,

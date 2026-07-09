@@ -22,7 +22,7 @@ afterEach(() => {
 describe('TicketsPage', () => {
   it('renders rows returned by the API', async () => {
     vi.mocked(ticketsApi.queryTickets).mockResolvedValue({
-      rows: [{ id: 't1', number: 1, status: 'open', priority: 'high', requesterId: null, assigneeId: null, teamId: null, dueAt: null, schemaId: 's1', schemaVersion: 1, data: { title: 'Printer down' }, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', formId: null, slaResponseDueAt: null, slaResolutionDueAt: null, firstRespondedAt: null, slaResponseBreachedAt: null, slaResolutionBreachedAt: null }],
+      rows: [{ id: 't1', number: 1, status: 'open', priority: 'high', requesterId: null, assigneeId: null, teamId: null, dueAt: null, schemaId: 's1', schemaVersion: 1, data: { title: 'Printer down' }, createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', formId: null, parentId: null, slaResponseDueAt: null, slaResolutionDueAt: null, firstRespondedAt: null, slaResponseBreachedAt: null, slaResolutionBreachedAt: null }],
       nextCursor: null,
     });
     render(wrap(<TicketsPage />));
