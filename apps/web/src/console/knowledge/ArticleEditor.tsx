@@ -10,6 +10,7 @@ import { CATEGORY_GROUPS } from './kb-types';
 import { slugify } from './slugify';
 import { useAuth } from '../../auth/AuthContext';
 import { sanitizeHtml } from './sanitize';
+import { streamKbDraft } from '../../api/ai';
 import type { ArticleSection, ArticleData } from './kb-types';
 
 type Go = (screen: string, extra?: Record<string, unknown>) => void;
@@ -57,7 +58,12 @@ function htmlToSections(html: string): ArticleSection[] {
   return sections;
 }
 
-const TESS_DRAFT_HTML = `<h2>Overview</h2><p>This article explains the most common causes and the quickest path to a fix, written for a non-technical reader.</p><h2>Quick fixes</h2><ol><li>Confirm the device or service is powered and connected.</li><li>Restart the app or device to clear a transient state.</li><li>Re-authenticate if you were recently prompted for a password.</li></ol><h2>Still stuck?</h2><p>If these steps don't resolve it, open a ticket and include what you've already tried — it helps us route and fix it faster.</p>`;
+/** Defensive: models are told not to fence, but strip a stray ```html … ``` wrapper if one slips in. */
+function stripCodeFences(s: string): string {
+  const t = s.trim();
+  if (!t.startsWith('```')) return s;
+  return t.replace(/^```[a-zA-Z]*\n?/, '').replace(/```\s*$/, '');
+}
 
 export function ArticleEditor({ articleId, go }: { articleId?: string; go: Go }) {
   const bot = useBot();
@@ -76,8 +82,12 @@ export function ArticleEditor({ articleId, go }: { articleId?: string; go: Go })
   const [cat, setCat] = useState('');
   const [linkedForm, setLinkedForm] = useState('report_incident');
   const [drafting, setDrafting] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [bodyEmpty, setBodyEmpty] = useState(true);
+  const draftAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => draftAbortRef.current?.abort(), []);
 
   useEffect(() => {
     if (editing && existing.data && !loaded) {
@@ -107,16 +117,44 @@ export function ArticleEditor({ articleId, go }: { articleId?: string; go: Go })
   const formatBlock = (tag: string) => exec('formatBlock', tag);
 
   const draftWithTess = () => {
+    if (drafting) return;
+    draftAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    draftAbortRef.current = ctrl;
+    setDraftError(null);
     setDrafting(true);
-    setTimeout(() => {
-      if (bodyRef.current) {
+    // When editing an article with content, ask Tess to improve/expand it rather than start over.
+    const existingHtml = editing ? (bodyRef.current?.innerHTML ?? '').trim() : '';
+    let acc = '';
+    streamKbDraft(
+      {
+        title: title || undefined,
+        category: cat || undefined,
+        categoryGroup: group || undefined,
+        existingHtml: existingHtml || undefined,
+      },
+      (chunk) => {
+        acc += chunk;
+        if (bodyRef.current) {
+          // Sanitize on every delta: the draft flows straight into the live (contentEditable)
+          // DOM, so a model-emitted <img onerror=…> must never execute here.
+          bodyRef.current.innerHTML = sanitizeHtml(stripCodeFences(acc));
+          setBodyEmpty(!bodyRef.current.textContent?.trim());
+        }
+      },
+      ctrl.signal,
+    )
+      .then(() => {
         if (!title) setTitle('How to ' + (cat ? cat.toLowerCase() + ' — quick guide' : 'resolve this issue'));
-        bodyRef.current.innerHTML = TESS_DRAFT_HTML;
-        setBodyEmpty(false);
-      }
-      if (!excerpt) setExcerpt('A short, friendly guide covering the common causes and the fastest fix.');
-      setDrafting(false);
-    }, 1300);
+        if (!excerpt) setExcerpt('A short, friendly guide covering the common causes and the fastest fix.');
+      })
+      .catch((e) => {
+        if ((e as Error)?.name === 'AbortError') return;
+        setDraftError(`Couldn't reach ${bot.name}. Check that Tess AI is enabled in Settings.`);
+      })
+      .finally(() => {
+        if (draftAbortRef.current === ctrl) setDrafting(false);
+      });
   };
 
   const save = () => {
@@ -191,15 +229,17 @@ export function ArticleEditor({ articleId, go }: { articleId?: string; go: Go })
 
             <input className="ed-title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Article title" />
             <textarea className="ed-excerpt" rows={2} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder="One-line summary shown in search and lists…" />
-            {drafting ? (
-              <div style={{ padding: '30px 0', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--ai-text)' }}>
+            {drafting && (
+              <div style={{ padding: '14px 0', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--ai-text)' }}>
                 <Orb size="md" thinking /> <span className="ask-typing"><i /><i /><i /></span> <span style={{ fontSize: 'var(--t-small)', color: 'var(--muted-foreground)' }}>{bot.name} is drafting…</span>
               </div>
-            ) : (
-              <div className="ed-body prose" ref={bodyRef} contentEditable suppressContentEditableWarning
-                onInput={() => setBodyEmpty(!bodyRef.current?.textContent?.trim())}
-                data-empty={bodyEmpty ? `Start writing, or let ${bot.name} draft a first version →` : undefined} />
             )}
+            {draftError && (
+              <div style={{ padding: '10px 0', fontSize: 'var(--t-small)', color: 'var(--danger, #dc2626)' }}>{draftError}</div>
+            )}
+            <div className="ed-body prose" ref={bodyRef} contentEditable={!drafting} suppressContentEditableWarning
+              onInput={() => setBodyEmpty(!bodyRef.current?.textContent?.trim())}
+              data-empty={bodyEmpty && !drafting ? `Start writing, or let ${bot.name} draft a first version →` : undefined} />
           </div>
         </div>
 
@@ -226,8 +266,8 @@ export function ArticleEditor({ articleId, go }: { articleId?: string; go: Go })
           <div className="ed-draft">
             <div className="edt-head"><Orb size="sm" />Draft with {bot.name}</div>
             <div className="edt-sub">Generate a structured first draft from the title and topic, then edit it yourself.</div>
-            <button className="ai-btn solid" style={{ width: '100%', justifyContent: 'center' }} onClick={draftWithTess}>
-              <Icon name="wand" size={14} />{editing ? 'Improve & expand' : 'Draft this article'}
+            <button className="ai-btn solid" style={{ width: '100%', justifyContent: 'center' }} onClick={draftWithTess} disabled={drafting}>
+              <Icon name="wand" size={14} />{drafting ? 'Drafting…' : editing ? 'Improve & expand' : 'Draft this article'}
             </button>
           </div>
 

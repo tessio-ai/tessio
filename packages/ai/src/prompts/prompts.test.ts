@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { buildSummarizePrompt } from './summarize';
 import { buildDraftPrompt } from './draft';
 import { buildTriagePrompt } from './triage';
+import { buildKbDraftPrompt } from './kb-draft';
 
 const ticket = {
   number: 142,
@@ -51,5 +52,37 @@ describe('prompt builders', () => {
     expect(buildSummarizePrompt({ ticket, comments, botName: 'Max' }).system).toContain('You are Max,');
     expect(buildDraftPrompt({ ticket, comments, requesterName: null, botName: 'Max' }).system).toContain('You are Max,');
     expect(buildTriagePrompt({ ticket, candidateAgents: [], botName: 'Max' }).system).toContain('You are Max,');
+  });
+});
+
+describe('knowledge-base draft prompt', () => {
+  const article = { title: 'VPN keeps disconnecting', category: 'Access', categoryGroup: 'IT', existingHtml: null };
+
+  it('includes the title and topic and constrains the HTML output', () => {
+    const { system, prompt } = buildKbDraftPrompt({ article });
+    expect(prompt).toContain('VPN keeps disconnecting');
+    expect(prompt).toContain('Access');
+    expect(system).toContain('<h2>');
+    expect(system).toContain('<ol><li>');
+    expect(system).toContain('You are Tess,');
+  });
+
+  it('writes a fresh draft when there is no existing body', () => {
+    const { prompt } = buildKbDraftPrompt({ article });
+    expect(prompt).toContain('Write a complete first draft');
+    expect(prompt).not.toContain('Existing draft:');
+  });
+
+  it('improves and expands when an existing body is supplied', () => {
+    const { prompt } = buildKbDraftPrompt({
+      article: { ...article, existingHtml: '<h2>Overview</h2><p>Old text.</p>' },
+    });
+    expect(prompt).toContain('Improve and expand');
+    expect(prompt).toContain('Existing draft:');
+    expect(prompt).toContain('Old text.');
+  });
+
+  it('speaks as the personalized bot name when one is set', () => {
+    expect(buildKbDraftPrompt({ article, botName: 'Max' }).system).toContain('You are Max,');
   });
 });
