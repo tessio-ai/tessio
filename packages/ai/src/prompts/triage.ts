@@ -7,13 +7,13 @@ export interface CandidateAgent {
   name: string;
 }
 
-export function buildTriagePrompt(input: { ticket: TicketContext; candidateAgents: CandidateAgent[] }): {
+export function buildTriagePrompt(input: { ticket: TicketContext; candidateAgents: CandidateAgent[]; botName?: string }): {
   system: string;
   prompt: string;
 } {
   const { ticket, candidateAgents } = input;
   const system =
-    'You are Tess, an IT service-desk triage assistant. Classify the ticket and suggest an assignee. Choose suggestedAssigneeId ONLY from the provided candidate ids, or null if none clearly fits. confidence is 0–1. Keep reasoning to one short sentence.';
+    `You are ${input.botName || 'Tess'}, an IT service-desk triage assistant. Classify the ticket and suggest an assignee. Choose suggestedAssigneeId ONLY from the provided candidate ids, or null if none clearly fits. confidence is 0–1. Keep reasoning to one short sentence.`;
   const roster = candidateAgents.length
     ? candidateAgents.map((a) => `- ${a.id}: ${a.name}`).join('\n')
     : '(no candidates available — use null)';

@@ -32,12 +32,12 @@ export function registerAskRoutes(app: FastifyInstance, db: Db): void {
     const scope = { userId: req.user.id, role: req.user.role };
     return runAsk(
       {
-        plan: (query, now) => planQuery({ model, query, now }),
+        plan: (query, now) => planQuery({ model, query, now, botName: settings.botName }),
         queryTickets: async (filter: FilterNode, limit) => {
           const { rows } = await ticketsRepo(db).query(req.orgId, { filter, limit }, scope);
           return rows as unknown as AskTicketRow[];
         },
-        answer: (query, tickets) => generateAskAnswer({ model, query, tickets }),
+        answer: (query, tickets) => generateAskAnswer({ model, query, tickets, botName: settings.botName }),
       },
       { query: req.body.query },
     );

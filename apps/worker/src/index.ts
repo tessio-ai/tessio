@@ -10,6 +10,7 @@ import {
   embedText,
   decryptSecret,
   applyAiEnvFallback,
+  DEFAULT_BOT_NAME,
   type AiSettings,
   type AiProvider,
   type TicketContext,
@@ -76,6 +77,7 @@ async function loadSettings(orgId: string): Promise<AiSettings> {
     model: row.model,
     embeddingModel: row.embeddingModel,
     apiKey: row.apiKeyCiphertext ? decryptSecret(row.apiKeyCiphertext, secretKey()) : null,
+    botName: row.botName?.trim() || DEFAULT_BOT_NAME,
     features: row.features,
   });
 }
@@ -96,7 +98,7 @@ const triageDeps: TriageDeps = {
   loadCandidates: async (orgId): Promise<CandidateAgent[]> =>
     (await usersRepo(db).list(orgId)).filter((u) => u.role !== 'requester').map((u) => ({ id: u.id, name: u.name })),
   runTriage: (settings, ticket, candidates) =>
-    triageTicket({ model: createTessClient(settings), ticket, candidateAgents: candidates }),
+    triageTicket({ model: createTessClient(settings), ticket, candidateAgents: candidates, botName: settings.botName }),
   saveTriage: async (input) => { await ticketAiTriageRepo(db).upsert(input); },
   recordTriaged: async (orgId, ticketId) => {
     await recordActivity(db, { orgId, recordType: 'ticket', recordId: ticketId, eventType: 'tess.triaged' });

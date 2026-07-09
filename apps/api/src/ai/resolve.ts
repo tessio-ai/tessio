@@ -2,7 +2,7 @@
 
 import type { Db } from '@tessio/db';
 import { aiSettingsRepo } from '@tessio/db';
-import { decryptSecret, applyAiEnvFallback, type AiProvider, type AiSettings } from '@tessio/ai';
+import { decryptSecret, applyAiEnvFallback, DEFAULT_BOT_NAME, type AiProvider, type AiSettings } from '@tessio/ai';
 import { requireSecretKey } from './secret';
 
 /**
@@ -20,6 +20,7 @@ export async function resolveAiSettings(db: Db, orgId: string): Promise<AiSettin
     model: row.model,
     embeddingModel: row.embeddingModel,
     apiKey,
+    botName: row.botName?.trim() || DEFAULT_BOT_NAME,
     features: row.features,
   });
 }

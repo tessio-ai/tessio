@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../icons';
 import { Orb } from '../agent';
+import { useBot } from '../bot';
 import { Button } from '../ui';
 import { useArticle, useKbSchemas, useCreateArticle, useUpdateArticle } from './queries';
 import { CATEGORY_GROUPS } from './kb-types';
@@ -59,6 +60,7 @@ function htmlToSections(html: string): ArticleSection[] {
 const TESS_DRAFT_HTML = `<h2>Overview</h2><p>This article explains the most common causes and the quickest path to a fix, written for a non-technical reader.</p><h2>Quick fixes</h2><ol><li>Confirm the device or service is powered and connected.</li><li>Restart the app or device to clear a transient state.</li><li>Re-authenticate if you were recently prompted for a password.</li></ol><h2>Still stuck?</h2><p>If these steps don't resolve it, open a ticket and include what you've already tried — it helps us route and fix it faster.</p>`;
 
 export function ArticleEditor({ articleId, go }: { articleId?: string; go: Go }) {
+  const bot = useBot();
   const { user } = useAuth();
   const { data: schemas } = useKbSchemas();
   const editing = !!articleId;
@@ -182,8 +184,8 @@ export function ArticleEditor({ articleId, go }: { articleId?: string; go: Go })
               <div className="ed-tool" title="Bulleted list" onMouseDown={e => { e.preventDefault(); exec('insertUnorderedList'); }}><Icon name="sliders" size={15} /></div>
               <div className="ed-tool" title="Link" onMouseDown={e => { e.preventDefault(); exec('createLink', 'https://'); }}><Icon name="link" size={15} /></div>
               <div style={{ flex: 1 }} />
-              <div className="ed-tool wide" title="Improve with Tess" onMouseDown={e => { e.preventDefault(); draftWithTess(); }} style={{ color: 'var(--ai-text)' }}>
-                <Icon name="sparkles" size={14} />Tess
+              <div className="ed-tool wide" title={`Improve with ${bot.name}`} onMouseDown={e => { e.preventDefault(); draftWithTess(); }} style={{ color: 'var(--ai-text)' }}>
+                <Icon name="sparkles" size={14} />{bot.name}
               </div>
             </div>
 
@@ -191,12 +193,12 @@ export function ArticleEditor({ articleId, go }: { articleId?: string; go: Go })
             <textarea className="ed-excerpt" rows={2} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder="One-line summary shown in search and lists…" />
             {drafting ? (
               <div style={{ padding: '30px 0', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--ai-text)' }}>
-                <Orb size="md" thinking /> <span className="ask-typing"><i /><i /><i /></span> <span style={{ fontSize: 'var(--t-small)', color: 'var(--muted-foreground)' }}>Tess is drafting…</span>
+                <Orb size="md" thinking /> <span className="ask-typing"><i /><i /><i /></span> <span style={{ fontSize: 'var(--t-small)', color: 'var(--muted-foreground)' }}>{bot.name} is drafting…</span>
               </div>
             ) : (
               <div className="ed-body prose" ref={bodyRef} contentEditable suppressContentEditableWarning
                 onInput={() => setBodyEmpty(!bodyRef.current?.textContent?.trim())}
-                data-empty={bodyEmpty ? 'Start writing, or let Tess draft a first version →' : undefined} />
+                data-empty={bodyEmpty ? `Start writing, or let ${bot.name} draft a first version →` : undefined} />
             )}
           </div>
         </div>
@@ -222,7 +224,7 @@ export function ArticleEditor({ articleId, go }: { articleId?: string; go: Go })
 
           <div className="ed-sect">Assist</div>
           <div className="ed-draft">
-            <div className="edt-head"><Orb size="sm" />Draft with Tess</div>
+            <div className="edt-head"><Orb size="sm" />Draft with {bot.name}</div>
             <div className="edt-sub">Generate a structured first draft from the title and topic, then edit it yourself.</div>
             <button className="ai-btn solid" style={{ width: '100%', justifyContent: 'center' }} onClick={draftWithTess}>
               <Icon name="wand" size={14} />{editing ? 'Improve & expand' : 'Draft this article'}

@@ -10,12 +10,14 @@ export function streamDraftReply(input: {
   ticket: TicketContext;
   comments: CommentContext[];
   requesterName: string | null;
+  botName?: string;
 }) {
   // Guardrail: strip PII from ticket + comments before they reach OpenAI.
   const { system, prompt } = buildDraftPrompt({
     ticket: redactTicketFields(input.ticket),
     comments: redactCommentBodies(input.comments),
     requesterName: input.requesterName,
+    botName: input.botName,
   });
   return streamText({ model: input.model, system, prompt });
 }

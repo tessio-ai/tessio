@@ -10,6 +10,7 @@ export {
   triagePriority,
   DEFAULT_AI_FEATURES,
   DEFAULT_AI_PROVIDER,
+  DEFAULT_BOT_NAME,
   type AiFeatures,
   type AiProvider,
   type AiSettings,

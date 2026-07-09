@@ -131,7 +131,11 @@ export function useUpdateAiSettings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (patch: UpdateAiSettingsInput) => updateAiSettings(patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['ai-settings'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['ai-settings'] });
+      // The assistant's name/icon render across the whole app — refresh them too.
+      void qc.invalidateQueries({ queryKey: ['bot-identity'] });
+    },
   });
 }
 

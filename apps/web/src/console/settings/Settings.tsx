@@ -19,6 +19,7 @@ import {
   useEntitlements,
 } from './queries';
 import { TessAiSettings } from './TessAiSettings';
+import { useBot } from '../bot';
 import { SecretsSettings } from './SecretsSettings';
 import { EmailSettings } from './EmailSettings';
 import { SlackSettings } from './SlackSettings';
@@ -35,7 +36,7 @@ const SET_SECTIONS = [
     { id: 'branding', label: 'Branding', icon: 'star' },
     { id: 'members', label: 'Members', icon: 'user' },
     { id: 'teams', label: 'Teams', icon: 'building' },
-    { id: 'tess', label: 'Tess AI', icon: 'sparkles' },
+    { id: 'tess', label: 'Tess AI', icon: 'sparkles' }, // label personalized at render via useBot()
     { id: 'email', label: 'Email', icon: 'mail' },
     { id: 'slack', label: 'Slack', icon: 'send' },
     { id: 'sla', label: 'SLA', icon: 'clock' },
@@ -70,13 +71,16 @@ export function Settings({ go, route }: { go: Go; route: Route }) {
 
   // Enterprise features are gated by edition entitlements, never by seats.
   const { data: ent } = useEntitlements();
+  const bot = useBot();
   const ssoOn = !!ent?.features.sso;
   const auditOn = !!ent?.features.audit_log;
 
-  // Hide enterprise nav items unless entitled.
+  // Hide enterprise nav items unless entitled; the AI item shows the org's assistant name.
   const sections = SET_SECTIONS.map((g) => ({
     ...g,
-    items: g.items.filter((it) => (it.id === 'sso' ? ssoOn : it.id === 'audit' ? auditOn : true)),
+    items: g.items
+      .filter((it) => (it.id === 'sso' ? ssoOn : it.id === 'audit' ? auditOn : true))
+      .map((it) => (it.id === 'tess' ? { ...it, label: `${bot.name} AI` } : it)),
   }));
 
   let body;

@@ -20,7 +20,7 @@ import { registerTeamSchemaRoutes } from './resources/team-schemas';
 import { registerFormRoutes } from './resources/forms';
 import { registerSchemaWriteRoutes } from './resources/schema-write';
 import { registerPortalSettingsRoutes } from './resources/portal-settings';
-import { registerAiSettingsRoutes } from './resources/ai-settings';
+import { registerAiSettingsRoutes, registerAiIdentityRoutes } from './resources/ai-settings';
 import { registerTicketAiRoutes } from './resources/ticket-ai';
 import { registerAskRoutes } from './resources/ai-ask';
 import { registerDashboardRoutes } from './resources/dashboard';
@@ -80,6 +80,9 @@ export function registerV1Routes(
   // Any authenticated user.
   registerNotificationsRoutes(app, db);
   registerMeRoutes(app, db);
+  // Assistant display name + icon — the console and portal render the bot for
+  // every role, so identity reads are not admin-gated (unlike /ai/settings).
+  registerAiIdentityRoutes(app, db);
 
   // Everything else is agent/admin only.
   app.register(async (staff) => {

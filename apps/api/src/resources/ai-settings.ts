@@ -19,6 +19,8 @@ const settingsResponse = z.object({
   embeddingModel: z.string(),
   apiKeyHint: z.string().nullable(),
   apiKeySet: z.boolean(),
+  botName: z.string(),
+  botIcon: z.string().nullable(),
   features: aiFeatures,
 });
 
@@ -29,6 +31,10 @@ const putBody = z.object({
   model: z.string().optional(),
   embeddingModel: z.string().optional(),
   apiKey: z.string().optional(), // when present, replaces the stored key
+  // Assistant identity — display name (1–24 chars) and an optional emoji or
+  // 1–2 character monogram shown in the avatar (empty/null = default orb).
+  botName: z.string().trim().min(1).max(24).optional(),
+  botIcon: z.string().trim().max(16).nullable().optional(),
   features: aiFeatures.partial().optional(),
 });
 
@@ -43,8 +49,30 @@ function present(row: Awaited<ReturnType<ReturnType<typeof aiSettingsRepo>['getO
     embeddingModel: row.embeddingModel,
     apiKeyHint: row.apiKeyHint,
     apiKeySet: !!row.apiKeyCiphertext,
+    botName: row.botName,
+    botIcon: row.botIcon,
     features: row.features,
   };
+}
+
+const identityResponse = z.object({
+  name: z.string(),
+  icon: z.string().nullable(),
+});
+
+/**
+ * Assistant identity (display name + avatar icon) for every authenticated role —
+ * agents and requesters render the bot in the console and portal, so this must
+ * not sit behind the admin guard. Exposes nothing else from ai_settings.
+ */
+export function registerAiIdentityRoutes(app: FastifyInstance, db: Db): void {
+  const r = app.withTypeProvider<ZodTypeProvider>();
+  const repo = aiSettingsRepo(db);
+
+  r.get('/ai/identity', { schema: { response: { 200: identityResponse } } }, async (req) => {
+    const row = await repo.getOrCreate(req.orgId);
+    return { name: row.botName?.trim() || 'Tess', icon: row.botIcon || null };
+  });
 }
 
 /** Admin-only Tess AI settings. Caller must be guarded by requireRole('admin'). */
@@ -65,6 +93,8 @@ export function registerAiSettingsRoutes(app: FastifyInstance, db: Db): void {
     if (body.baseUrl !== undefined) patch.baseUrl = body.baseUrl;
     if (body.model !== undefined) patch.model = body.model;
     if (body.embeddingModel !== undefined) patch.embeddingModel = body.embeddingModel;
+    if (body.botName !== undefined) patch.botName = body.botName;
+    if (body.botIcon !== undefined) patch.botIcon = body.botIcon || null;
     if (body.features !== undefined) {
       const current = (await repo.getOrCreate(req.orgId)).features;
       patch.features = { ...current, ...body.features };

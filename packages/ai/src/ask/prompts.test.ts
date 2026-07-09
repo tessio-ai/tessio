@@ -51,6 +51,13 @@ describe('ask prompts', () => {
     expect(prompt).toMatch(/resolvedAt.*EMPTY|do NOT filter on these/);
   });
 
+  it('plan and answer prompts speak as the personalized bot name (default Tess)', () => {
+    expect(buildPlanPrompt({ query: 'q', now: '2026-06-08T12:00:00Z' }).system).toContain('You are Tess,');
+    expect(buildPlanPrompt({ query: 'q', now: '2026-06-08T12:00:00Z', botName: 'Max' }).system).toContain('You are Max,');
+    expect(buildAnswerPrompt({ query: 'q', tickets: [] }).system).toContain('You are Tess.');
+    expect(buildAnswerPrompt({ query: 'q', tickets: [], botName: 'Max' }).system).toContain('You are Max.');
+  });
+
   it('answer prompt lists the fetched tickets by number and demands grounding', () => {
     const { system, prompt } = buildAnswerPrompt({
       query: "what's open?",
