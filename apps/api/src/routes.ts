@@ -22,6 +22,7 @@ import { registerSchemaWriteRoutes } from './resources/schema-write';
 import { registerPortalSettingsRoutes } from './resources/portal-settings';
 import { registerAiSettingsRoutes, registerAiIdentityRoutes } from './resources/ai-settings';
 import { registerTicketAiRoutes } from './resources/ticket-ai';
+import { registerKbAiRoutes } from './resources/kb-ai';
 import { registerAskRoutes } from './resources/ai-ask';
 import { registerDashboardRoutes } from './resources/dashboard';
 import { registerReportRoutes } from './resources/reports';
@@ -100,6 +101,7 @@ export function registerV1Routes(
 
     registerKbRevisionRoutes(staff, db);
     registerTicketAiRoutes(staff, db);
+    registerKbAiRoutes(staff, db);
     registerAskRoutes(staff, db);
     registerDashboardRoutes(staff, db);
     registerReportRoutes(staff, db);

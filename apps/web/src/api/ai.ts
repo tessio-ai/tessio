@@ -61,8 +61,20 @@ export const runTicketTriage = (ticketId: string) =>
   request<TicketTriage>(`/tickets/${ticketId}/ai/triage`, { method: 'POST' });
 
 /** Stream a plain-text AI response, invoking `onDelta` for each chunk. Returns the full text. */
-async function streamText(path: string, onDelta: (chunk: string) => void, signal?: AbortSignal): Promise<string> {
-  const res = await fetch(`${BASE_URL}${path}`, { method: 'POST', credentials: 'include', signal });
+async function streamText(
+  path: string,
+  onDelta: (chunk: string) => void,
+  signal?: AbortSignal,
+  body?: unknown,
+): Promise<string> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    signal,
+    ...(body !== undefined
+      ? { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
+      : {}),
+  });
   if (!res.ok || !res.body) throw new Error(`AI request failed (${res.status})`);
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -83,6 +95,16 @@ export const streamTicketSummary = (ticketId: string, onDelta: (c: string) => vo
   streamText(`/tickets/${ticketId}/ai/summary`, onDelta, signal);
 export const streamTicketDraft = (ticketId: string, onDelta: (c: string) => void, signal?: AbortSignal) =>
   streamText(`/tickets/${ticketId}/ai/draft`, onDelta, signal);
+
+export interface KbDraftInput {
+  title?: string;
+  category?: string;
+  categoryGroup?: string;
+  existingHtml?: string;
+}
+/** Stream a knowledge-base article draft ("Draft with Tess") from the current title/topic. */
+export const streamKbDraft = (input: KbDraftInput, onDelta: (c: string) => void, signal?: AbortSignal) =>
+  streamText('/kb-articles/ai/draft', onDelta, signal, input);
 
 export interface SimilarTicket {
   id: string;

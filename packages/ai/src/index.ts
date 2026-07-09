@@ -27,6 +27,8 @@ export {
 export { aiEnvOverrides, applyAiEnvFallback, type AiEnvOverrides } from './env';
 export { streamTicketSummary } from './features/summarize';
 export { streamDraftReply } from './features/draft';
+export { streamKbDraft } from './features/kb-draft';
+export type { KbDraftContext } from './prompts/kb-draft';
 export { triageTicket, triageResultSchema, type TriageResult } from './features/triage';
 export type { TicketContext, CommentContext } from './prompts/summarize';
 export type { CandidateAgent } from './prompts/triage';
