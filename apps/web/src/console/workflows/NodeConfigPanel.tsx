@@ -32,6 +32,7 @@ const EVENT_LABELS: Record<(typeof triggerEvents)[number], string> = {
   priority: 'Priority changed',
   assigned: 'Assignee changed',
   team: 'Team changed',
+  parent: 'Parent changed',
   field_changed: 'A field changed',
   csat_submitted: 'Satisfaction rating submitted',
 };
@@ -476,6 +477,16 @@ export function NodeConfigPanel({ graph, selected, onChangeNode, onChangeEdge, o
             </select>
           </div>
           <div className="wf-field">
+            <label>Parent ticket ID</label>
+            <TemplateInput
+              value={node.config.set.parentId ?? ''}
+              onChange={(v) => setConfig({ set: { ...node.config.set, parentId: v || undefined } })}
+              variables={variables}
+              placeholder="ticket id or {{ template }}"
+            />
+            <p className="wf-panel-hint">Files this ticket under a parent. Leave blank to keep its current parent.</p>
+          </div>
+          <div className="wf-field">
             <label>Custom fields</label>
             <KeyValueRows
               key={`${node.id}:data`}
@@ -488,6 +499,72 @@ export function NodeConfigPanel({ graph, selected, onChangeNode, onChangeEdge, o
               variables={variables}
             />
           </div>
+        </>
+      )}
+
+      {node.type === 'create_subtask' && (
+        <>
+          <div className="wf-field">
+            <label>Title</label>
+            <TemplateInput
+              value={node.config.title}
+              onChange={(v) => setConfig({ title: v })}
+              variables={variables}
+              placeholder="Follow up on {{ ticket.data.title }}"
+            />
+          </div>
+          <div className="wf-field">
+            <label>Description</label>
+            <TemplateTextarea
+              value={node.config.description ?? ''}
+              placeholder={'Optional. Supports {{ ticket.priority }} templates.'}
+              onChange={(v) => setConfig({ description: v || undefined })}
+              variables={variables}
+            />
+          </div>
+          <div className="wf-field">
+            <label>Priority</label>
+            <select value={node.config.priority ?? ''} onChange={(e) => setConfig({ priority: e.target.value || undefined })}>
+              <option value="">(none)</option>
+              {Object.entries(PRIORITY_MAP).map(([k, v]) => (
+                <option key={k} value={k}>{v.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="wf-field">
+            <label>Assignee</label>
+            <select value={node.config.assigneeId ?? ''} onChange={(e) => setConfig({ assigneeId: e.target.value || undefined })}>
+              <option value="">(unassigned)</option>
+              {users.filter((u) => u.role !== 'requester').map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="wf-field">
+            <label>Team</label>
+            <select value={node.config.teamId ?? ''} onChange={(e) => setConfig({ teamId: e.target.value || undefined })}>
+              <option value="">(inherit from parent)</option>
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="wf-field">
+            <label>Custom fields</label>
+            <KeyValueRows
+              key={`${node.id}:data`}
+              entries={Object.entries(node.config.data ?? {})}
+              onChange={(entries) =>
+                setConfig({ data: entries.length ? Object.fromEntries(entries.filter(([k]) => k.trim())) : undefined })
+              }
+              keyPlaceholder="field key"
+              valuePlaceholder="value or {{ template }}"
+              variables={variables}
+            />
+          </div>
+          <p className="wf-panel-hint">
+            The subtask inherits this ticket's type. Its id is available downstream as <code>{'{{ nodes.' + node.id + '.output.ticketId }}'}</code> (plus <code>.number</code>).
+          </p>
         </>
       )}
 

@@ -10,7 +10,7 @@ import { filterNode } from './filter';
  */
 
 /** Ticket activity events a workflow can trigger on (mirrors the events the API records). */
-export const triggerEvents = ['created', 'status', 'priority', 'assigned', 'team', 'field_changed', 'csat_submitted'] as const;
+export const triggerEvents = ['created', 'status', 'priority', 'assigned', 'team', 'parent', 'field_changed', 'csat_submitted'] as const;
 export type TriggerEvent = (typeof triggerEvents)[number];
 
 export const HTTP_TIMEOUT_DEFAULT_MS = 10_000;
@@ -37,8 +37,24 @@ export const updateTicketConfig = z.object({
     priority: z.string().optional(),
     assigneeId: z.string().optional(),
     teamId: z.string().optional(),
+    parentId: z.string().optional(),
     data: z.record(z.string()).optional(),
   }),
+});
+
+/**
+ * Create a child ticket under the run's subject ticket. The subtask inherits the
+ * parent's schema (and team, unless overridden); `title` is required (enforced at
+ * publish). Only valid on event-triggered workflows — a scheduled run has no parent.
+ */
+export const createSubtaskConfig = z.object({
+  title: z.string(),
+  description: z.string().optional(),
+  priority: z.string().optional(),
+  assigneeId: z.string().optional(),
+  teamId: z.string().optional(),
+  status: z.string().optional(),
+  data: z.record(z.string()).optional(),
 });
 
 // Required-content rules (non-empty body/url/code) are enforced by
@@ -81,6 +97,7 @@ export const workflowNodeType = z.enum([
   'branch',
   'join',
   'update_ticket',
+  'create_subtask',
   'add_comment',
   'http_request',
   'script',
@@ -97,6 +114,7 @@ export const workflowNode = z.discriminatedUnion('type', [
   z.object({ ...nodeBase, type: z.literal('branch'), config: z.object({}).passthrough().default({}) }),
   z.object({ ...nodeBase, type: z.literal('join'), config: joinConfig }),
   z.object({ ...nodeBase, type: z.literal('update_ticket'), config: updateTicketConfig }),
+  z.object({ ...nodeBase, type: z.literal('create_subtask'), config: createSubtaskConfig }),
   z.object({ ...nodeBase, type: z.literal('add_comment'), config: addCommentConfig }),
   z.object({ ...nodeBase, type: z.literal('http_request'), config: httpRequestConfig }),
   z.object({ ...nodeBase, type: z.literal('script'), config: scriptConfig }),
@@ -189,7 +207,7 @@ export function validateWorkflowGraph(graph: WorkflowGraph): WorkflowGraphError[
         errors.push({ nodeId: trigger.id, message: `Invalid cron expression "${trigger.config.schedule!.cron}".` });
       }
       for (const n of graph.nodes) {
-        if (n.type === 'update_ticket' || n.type === 'add_comment') {
+        if (n.type === 'update_ticket' || n.type === 'add_comment' || n.type === 'create_subtask') {
           errors.push({ nodeId: n.id, message: `Step "${n.name ?? n.id}" needs a ticket, but a scheduled workflow has no subject ticket.` });
         }
       }
@@ -200,6 +218,9 @@ export function validateWorkflowGraph(graph: WorkflowGraph): WorkflowGraphError[
   for (const n of graph.nodes) {
     if (n.type === 'add_comment' && !n.config.body?.trim()) {
       errors.push({ nodeId: n.id, message: `Comment step "${n.name ?? n.id}" has no body.` });
+    }
+    if (n.type === 'create_subtask' && !n.config.title?.trim()) {
+      errors.push({ nodeId: n.id, message: `Subtask step "${n.name ?? n.id}" has no title.` });
     }
     if (n.type === 'http_request' && !n.config.url?.trim()) {
       errors.push({ nodeId: n.id, message: `HTTP step "${n.name ?? n.id}" has no URL.` });

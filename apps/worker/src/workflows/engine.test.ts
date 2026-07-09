@@ -51,6 +51,7 @@ function makeDeps(exec: Partial<NodeExecDeps> = {}): { deps: EngineDeps; recorde
     loadSecrets: async () => ({}),
     exec: {
       updateTicket: async () => ({ ticket: { id: 'tk1' }, updated: [] }),
+      createSubtask: async () => ({ ticketId: 'tk2', number: 2 }),
       addComment: async () => ({ commentId: 'c1' }),
       fetchFn: (() => {
         throw new Error('no fetch in this test');

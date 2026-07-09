@@ -79,6 +79,30 @@ function buildEngineDeps(db: Db, orgId: string, runnerUrl: string): EngineDeps {
           ticketId,
           set,
         ),
+      createSubtask: async (parentId, fields) => {
+        const parent = (await tickets.getById(orgId, parentId)) as Record<string, unknown> | undefined;
+        if (!parent) throw new Error(`Ticket ${parentId} not found.`);
+        const data: Record<string, unknown> = {
+          ...(fields.data ?? {}),
+          title: fields.title,
+          ...(fields.description !== undefined ? { description: fields.description } : {}),
+        };
+        const child = await tickets.create({
+          orgId,
+          schemaId: parent.schemaId as string,
+          schemaVersion: parent.schemaVersion as number,
+          parentId,
+          teamId: (fields.teamId ?? (parent.teamId as string | null)) ?? null,
+          assigneeId: fields.assigneeId ?? null,
+          priority: fields.priority ?? null,
+          status: fields.status ?? null,
+          data,
+        });
+        // Record the child's creation for its timeline, but do NOT publish a workflow
+        // event — workflows must not re-trigger workflows (v1 loop guard, see design doc).
+        await recordActivity(db, { orgId, recordType: 'ticket', recordId: child.id as string, eventType: 'created' });
+        return { ticketId: child.id as string, number: child.number as number };
+      },
       addComment: async (ticketId, body, internal) => {
         const row = await addComment(db, { orgId, recordType: 'ticket', recordId: ticketId, body, internal });
         await recordActivity(db, { orgId, recordType: 'ticket', recordId: ticketId, eventType: 'commented', changes: { internal } });
