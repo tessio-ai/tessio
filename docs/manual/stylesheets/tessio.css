@@ -1,66 +1,73 @@
 /* ============================================================
    Tessio docs theme
-   Matches the product landing page: Anton condensed display,
-   ink/paper surfaces, indigo links, coral accent, pill shapes.
+   Matches the product landing page: Schibsted Grotesk display,
+   warm cream canvas, white cards, indigo links, coral accent,
+   pill shapes.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700;800&display=swap');
 
 :root {
-  --tessio-ink: #0e0e11;
-  --tessio-ink-2: #16161b;
-  --tessio-paper: #ffffff;
-  --tessio-paper-2: #f6f5f2;
-  --tessio-line: #e7e6e2;
-  --tessio-line-dk: #26262e;
+  --tessio-ink: #1b1a16;       /* warm near-black (landing --ink) */
+  --tessio-ink-soft: #2c2a24;
+  --tessio-ink-2: #24221c;     /* warm dark surface (dark scheme) */
+  --tessio-paper: #ffffff;     /* white cards / code */
+  --tessio-paper-2: #f7f3ea;   /* warm light section (landing --paper-2) */
+  --tessio-cream: #efe9dd;     /* warm canvas (landing --paper) */
+  --tessio-line: #e4ddcd;      /* warm hairline (landing --line) */
+  --tessio-line-2: #d8d0bd;
+  --tessio-line-dk: #33302a;
+  --tessio-muted: #6a655a;
+  --tessio-faint: #9a9486;
   --tessio-indigo: #4f46e5;
   --tessio-indigo-2: #818cf8;
   --tessio-violet: #8b5cf6;
   --tessio-cyan: #22d3ee;
   --tessio-coral: #ff5a3c;
-  --tessio-disp: "Anton", "Inter", sans-serif;
+  --tessio-disp: "Schibsted Grotesk", "Inter", sans-serif;
 }
 
 /* ---------- palette: light ---------- */
 [data-md-color-scheme="default"] {
   --md-primary-fg-color: var(--tessio-ink);
-  --md-primary-fg-color--light: #2a2a32;
-  --md-primary-fg-color--dark: #0a0a0d;
-  --md-primary-bg-color: #f7f7f5;
-  --md-primary-bg-color--light: #a8a8b3;
+  --md-primary-fg-color--light: #2c2a24;
+  --md-primary-fg-color--dark: #0f0e0b;
+  --md-primary-bg-color: var(--tessio-paper-2);
+  --md-primary-bg-color--light: #a8a296;
   --md-accent-fg-color: var(--tessio-coral);
   --md-accent-fg-color--transparent: rgba(255, 90, 60, .08);
-  --md-default-fg-color: #14141a;
-  --md-default-fg-color--light: #5d5d68;
-  --md-default-fg-color--lighter: #9a9aa4;
-  --md-default-fg-color--lightest: var(--tessio-paper-2);
+  --md-default-bg-color: var(--tessio-cream);
+  --md-default-fg-color: var(--tessio-ink);
+  --md-default-fg-color--light: var(--tessio-muted);
+  --md-default-fg-color--lighter: var(--tessio-faint);
+  --md-default-fg-color--lightest: var(--tessio-line);
   --md-typeset-a-color: var(--tessio-indigo);
   --md-code-bg-color: var(--tessio-paper-2);
-  --md-code-fg-color: #14141a;
+  --md-code-fg-color: var(--tessio-ink);
   --md-footer-bg-color: var(--tessio-ink);
-  --md-footer-bg-color--dark: #0a0a0d;
+  --md-footer-bg-color--dark: #0f0e0b;
 }
 
 /* ---------- palette: dark ---------- */
 [data-md-color-scheme="slate"] {
   --md-primary-fg-color: var(--tessio-ink);
-  --md-primary-fg-color--light: #2a2a32;
-  --md-primary-fg-color--dark: #0a0a0d;
-  --md-primary-bg-color: #f7f7f5;
-  --md-primary-bg-color--light: #a8a8b3;
+  --md-primary-fg-color--light: #2c2a24;
+  --md-primary-fg-color--dark: #0f0e0b;
+  --md-primary-bg-color: #f7f3ea;
+  --md-primary-bg-color--light: #a8a296;
   --md-accent-fg-color: #ff7a5e;
   --md-accent-fg-color--transparent: rgba(255, 122, 94, .1);
   --md-default-bg-color: var(--tessio-ink);
-  --md-default-fg-color: #f0f0f3;
-  --md-default-fg-color--light: #b6b6c0;
-  --md-default-fg-color--lighter: #8a8a95;
+  --md-default-fg-color: #f2f0ea;
+  --md-default-fg-color--light: #bdb8ac;
+  --md-default-fg-color--lighter: #8f8a7e;
   --md-default-fg-color--lightest: var(--tessio-ink-2);
   --md-typeset-a-color: var(--tessio-indigo-2);
   --md-code-bg-color: var(--tessio-ink-2);
-  --md-code-fg-color: #e7e7ec;
-  --md-footer-bg-color: #0a0a0d;
-  --md-footer-bg-color--dark: #060608;
-  --md-typeset-color: #e2e2e8;
+  --md-code-fg-color: #ebe8e0;
+  --md-footer-bg-color: #0f0e0b;
+  --md-footer-bg-color--dark: #0a0906;
+  --md-typeset-color: #e6e3db;
 }
 
 /* ---------- header: the landing's floating white pill nav ---------- */
@@ -77,10 +84,10 @@
 
 .md-header__inner {
   background: var(--tessio-paper);
-  color: #14141a;
+  color: var(--tessio-ink);
   border: 1px solid var(--tessio-line);
   border-radius: 999px;
-  box-shadow: 0 8px 30px -14px rgba(0, 0, 0, .35);
+  box-shadow: 0 10px 30px -14px rgba(40, 35, 20, .4);
   padding: 4px 6px 4px 10px;
 }
 
@@ -91,14 +98,13 @@
 
 .md-header__topic:first-child {
   font-family: var(--tessio-disp);
-  font-weight: 400;
-  text-transform: uppercase;
-  font-size: 1rem;
-  letter-spacing: .02em;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -.02em;
 }
 
 .md-header__button {
-  color: #14141a;
+  color: var(--tessio-ink);
 }
 
 .md-header__button:hover {
@@ -108,11 +114,11 @@
 
 .md-header__source,
 .md-header__source .md-source {
-  color: #5d5d68;
+  color: var(--tessio-muted);
 }
 
 .md-header__source .md-source:hover {
-  color: #14141a;
+  color: var(--tessio-ink);
   opacity: 1;
 }
 
@@ -136,16 +142,16 @@
   }
 
   .md-search__form:hover {
-    background: #efede9;
+    background: #ece5d6;
   }
 
   .md-search__input {
-    color: #14141a;
+    color: var(--tessio-ink);
   }
 
   .md-search__input::placeholder,
   .md-search__input + .md-search__icon {
-    color: #6b6b76;
+    color: var(--tessio-muted);
   }
 
   [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
@@ -162,28 +168,30 @@
 .md-typeset h1,
 .md-typeset h2 {
   font-family: var(--tessio-disp);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: .01em;
+  font-weight: 700;
+  letter-spacing: -.03em;
   color: var(--md-default-fg-color);
 }
 
 .md-typeset h1 {
-  font-size: 2.3rem;
-  line-height: .95;
+  font-size: 2.4rem;
+  line-height: 1;
   margin-bottom: 1.2rem;
   text-wrap: balance;
 }
 
 .md-typeset h2 {
-  font-size: 1.3rem;
-  line-height: 1;
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1.04;
+  letter-spacing: -.025em;
   margin: 2em 0 .8em;
 }
 
 .md-typeset h3 {
+  font-family: var(--tessio-disp);
   font-weight: 700;
-  letter-spacing: -.01em;
+  letter-spacing: -.02em;
 }
 
 .md-typeset {
@@ -243,10 +251,10 @@
 .md-typeset .admonition-title,
 .md-typeset summary {
   border-radius: 0;
-  font-family: var(--tessio-disp);
-  font-weight: 400;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .04em;
+  font-size: .68rem;
+  letter-spacing: .06em;
 }
 
 /* ---------- buttons ---------- */
@@ -327,7 +335,7 @@
 }
 
 .md-footer__link:hover {
-  background: #1d1d24;
+  background: #2b2921;
   opacity: 1;
 }
 
@@ -346,7 +354,7 @@
 
 .md-top:hover,
 .md-top:focus {
-  background: #2a2a32;
+  background: #2c2a24;
   color: #fff;
 }
 

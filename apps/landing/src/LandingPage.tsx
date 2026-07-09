@@ -103,6 +103,14 @@ const DOCS_URL = 'https://tessio-ai.github.io/tessio/';
 const GITHUB_URL = 'https://github.com/tessio-ai/tessio';
 const START_URL = `${DOCS_URL}getting-started/`;
 
+/* Deep links into the self-hosting manual (mkdocs slugs) */
+const TOUR_URL = `${DOCS_URL}#see-tessio-in-action`;
+const KNOWLEDGE_URL = `${DOCS_URL}#knowledge-base`;
+const DASHBOARDS_URL = `${DOCS_URL}#agent-dashboard`;
+const CONFIG_URL = `${DOCS_URL}configuration/`;
+const COMPOSE_URL = `${DOCS_URL}install/compose/`;
+const K8S_URL = `${DOCS_URL}install/kubernetes/`;
+
 const COMPARE_OLD = [
   'Dated, cluttered interfaces agents dread',
   'Manual triage and routing, every ticket',
@@ -353,7 +361,7 @@ export function LandingPage() {
                   Ask Tess synthesizes a real answer from your own help articles — and cites exactly
                   where it came from, so the whole desk can trust it.
                 </p>
-                <a className="frow-link" href={DOCS_URL} target="_blank" rel="noreferrer">
+                <a className="frow-link" href={KNOWLEDGE_URL} target="_blank" rel="noreferrer">
                   Explore the knowledge base <span>→</span>
                 </a>
               </div>
@@ -383,7 +391,7 @@ export function LandingPage() {
                   Schema-driven forms where Tess reads the issue as it's typed, suggests a category,
                   and deflects to a known fix before a ticket is ever created.
                 </p>
-                <a className="frow-link" href={DOCS_URL} target="_blank" rel="noreferrer">
+                <a className="frow-link" href={TOUR_URL} target="_blank" rel="noreferrer">
                   See the form builder <span>→</span>
                 </a>
               </div>
@@ -413,7 +421,7 @@ export function LandingPage() {
                   Live SLA health, team load, and trends — with Tess flagging what needs you the
                   moment a ticket drifts toward a breach.
                 </p>
-                <a className="frow-link" href={DOCS_URL} target="_blank" rel="noreferrer">
+                <a className="frow-link" href={DASHBOARDS_URL} target="_blank" rel="noreferrer">
                   Tour the dashboards <span>→</span>
                 </a>
               </div>
@@ -454,7 +462,7 @@ export function LandingPage() {
                   Recolor the entire workspace, drop in your logo, and shape your help center to
                   match. Self-hosted, on your servers, entirely on your terms.
                 </p>
-                <a className="frow-link" href={DOCS_URL} target="_blank" rel="noreferrer">
+                <a className="frow-link" href={CONFIG_URL} target="_blank" rel="noreferrer">
                   Customize your workspace <span>→</span>
                 </a>
               </div>
@@ -566,7 +574,8 @@ export function LandingPage() {
               <h4>Self-host</h4>
               <a href={DOCS_URL} target="_blank" rel="noreferrer">Documentation</a>
               <a href={START_URL} target="_blank" rel="noreferrer">5-minute quickstart</a>
-              <a href={`${DOCS_URL}install/kubernetes/`} target="_blank" rel="noreferrer">Kubernetes (Helm)</a>
+              <a href={COMPOSE_URL} target="_blank" rel="noreferrer">Docker Compose</a>
+              <a href={K8S_URL} target="_blank" rel="noreferrer">Kubernetes (Helm)</a>
               <a href={GITHUB_URL} target="_blank" rel="noreferrer">GitHub</a>
             </div>
             <div className="landing-foot-col">
