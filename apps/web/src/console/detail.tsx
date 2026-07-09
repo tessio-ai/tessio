@@ -13,13 +13,13 @@ import { useAssets } from './assets/queries';
 import { downloadAttachment } from '../api/attachments';
 import { toDisplayTicket, usersById } from './tickets/adapt';
 import { ticketTypeKeyById } from './tickets/types-map';
-import { useTicketTriage, useSimilarTickets } from './tickets/queries';
+import { useTicketTriage, useSimilarTickets, useTicketCsat } from './tickets/queries';
 import { useAiSettings } from './settings/queries';
 import { streamTicketSummary, streamTicketDraft } from '../api/ai';
 
 type Go = (screen: string, extra?: Partial<Route>) => void;
 
-const TL_ICON: Record<string, string> = { created: 'plus', assigned: 'user', status: 'refresh', priority: 'alert', comment: 'message', team: 'building', field_changed: 'edit' };
+const TL_ICON: Record<string, string> = { created: 'plus', assigned: 'user', status: 'refresh', priority: 'alert', comment: 'message', team: 'building', field_changed: 'edit', csat_submitted: 'star' };
 
 function PropRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -183,6 +183,7 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
   const triageData = useTicketTriage(ticketId).data ?? null;
   const similarEnabled = !!aiSettingsData?.enabled && !!aiSettingsData.features.similar;
   const similarQ = useSimilarTickets(ticketId, similarEnabled);
+  const csatSurvey = useTicketCsat(ticketId).data?.survey ?? null;
 
   if (ticketQ.isLoading || !ticketQ.data) return <div className="detail"><div className="page-pad muted">Loading…</div></div>;
 
@@ -208,6 +209,8 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
         const fieldLabel = (schema?.definition.fields ?? []).find((f) => f.key === ev.field)?.label ?? ev.field ?? 'a field';
         return <><b>{who.name}</b> updated <b>{fieldLabel}</b>{ev.from && ev.to ? <> from <b>{String(ev.from)}</b> → <b>{String(ev.to)}</b></> : ev.to ? <> to <b>{String(ev.to)}</b></> : <> (cleared)</>}</>;
       }
+      case 'csat_submitted':
+        return <><b>{who.name}</b> rated this ticket <b>{ev.rating != null ? `${ev.rating}/5` : ''}</b></>;
       default:
         return <><b>{who.name}</b> commented</>;
     }
@@ -285,7 +288,7 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
   };
 
   const events: any[] = [
-    ...(activityQ.data ?? []).map((a) => ({ kind: a.eventType, who: a.actorId, at: Date.parse(a.createdAt), from: a.changes?.from, to: a.changes?.to, field: a.changes?.field })),
+    ...(activityQ.data ?? []).map((a) => ({ kind: a.eventType, who: a.actorId, at: Date.parse(a.createdAt), from: a.changes?.from, to: a.changes?.to, field: a.changes?.field, rating: a.changes?.rating })),
     ...(commentsQ.data ?? []).map((c) => ({ kind: 'comment', who: c.authorId, at: Date.parse(c.createdAt), internal: c.internal, body: c.body })),
   ].sort((a, b) => a.at - b.at);
 
@@ -599,6 +602,35 @@ export function TicketDetail({ ticketId, go, addToast }: { ticketId: string; go:
                       ? <span className="pill pill-danger" style={{ height: 20 }}><Icon name="alert" size={11} />Breached</span>
                       : null}
                   </span>
+                </PropRow>
+              )}
+            </>
+          )}
+
+          {csatSurvey && (
+            <>
+              <div className="rail-div" />
+              <div className="rail-sect">Satisfaction</div>
+              {csatSurvey.respondedAt ? (
+                <>
+                  <PropRow label="Rating">
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, color: 'var(--warning)' }} title={`${csatSurvey.rating}/5`}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Icon key={n} name="star" size={14} style={(csatSurvey.rating ?? 0) >= n ? { fill: 'currentColor' } : { color: 'var(--faint-foreground)' }} />
+                      ))}
+                      <span style={{ marginLeft: 6, color: 'var(--foreground)' }}>{csatSurvey.rating}/5</span>
+                    </span>
+                  </PropRow>
+                  <PropRow label="Rated"><span title={absTime(Date.parse(csatSurvey.respondedAt))}>{relTime(Date.parse(csatSurvey.respondedAt))}</span></PropRow>
+                  {csatSurvey.comment && (
+                    <div className="prop-row" style={{ gridTemplateColumns: '1fr' }}>
+                      <div className="prop-val" style={{ fontStyle: 'italic', color: 'var(--muted-foreground)' }}>&ldquo;{csatSurvey.comment}&rdquo;</div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <PropRow label="Survey">
+                  <span className="pill pill-neutral" style={{ height: 20 }}><Icon name="clock" size={11} />Awaiting response</span>
                 </PropRow>
               )}
             </>

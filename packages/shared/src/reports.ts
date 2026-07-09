@@ -29,7 +29,7 @@ export const reportDefinition = z.object({
 });
 export type ReportDefinition = z.infer<typeof reportDefinition>;
 
-export interface ReportMeasure { id: string; label: string; fn: 'count' | 'avg' | 'sum' | 'min' | 'max' | 'pct' | 'median'; group?: 'tickets' | 'ai' | 'custom'; }
+export interface ReportMeasure { id: string; label: string; fn: 'count' | 'avg' | 'sum' | 'min' | 'max' | 'pct' | 'median'; group?: 'tickets' | 'ai' | 'csat' | 'custom'; }
 export const REPORT_MEASURES: ReportMeasure[] = [
   { id: 'count', label: 'Ticket count', fn: 'count', group: 'tickets' },
   { id: 'count_distinct_requesters', label: 'Unique requesters', fn: 'count', group: 'tickets' },
@@ -42,6 +42,9 @@ export const REPORT_MEASURES: ReportMeasure[] = [
   { id: 'count_triaged', label: 'AI-triaged count', fn: 'count', group: 'ai' },
   { id: 'count_flagged', label: 'AI low-confidence count', fn: 'count', group: 'ai' },
   { id: 'pct_triaged', label: 'AI-triaged %', fn: 'pct', group: 'ai' },
+  { id: 'avg_csat', label: 'Avg satisfaction (1–5)', fn: 'avg', group: 'csat' },
+  { id: 'count_csat_responses', label: 'Satisfaction responses', fn: 'count', group: 'csat' },
+  { id: 'pct_csat_responded', label: 'Satisfaction response rate %', fn: 'pct', group: 'csat' },
 ];
 
 export interface ReportDimension { id: string; label: string; kind: ReportDimensionKind; }
@@ -54,6 +57,7 @@ export const REPORT_DIMENSIONS: ReportDimension[] = [
   { id: 'requesterId', label: 'Requester', kind: 'user' },
   { id: 'ai.category', label: 'AI category', kind: 'string' },
   { id: 'ai.priority', label: 'AI priority', kind: 'priority' },
+  { id: 'csat.rating', label: 'Satisfaction rating', kind: 'string' },
   { id: 'createdAt', label: 'Created date', kind: 'date' },
   { id: 'resolvedAt', label: 'Resolved date', kind: 'date' },
 ];

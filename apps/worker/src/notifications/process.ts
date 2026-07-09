@@ -12,15 +12,16 @@ import {
 import { resolveRecipients } from './resolve';
 import { renderNotificationEmail } from '../email/templates';
 
-export interface NotifyTicket { id: string; number: number; title: string; requesterId: string | null; assigneeId: string | null; }
+export interface NotifyTicket { id: string; number: number; title: string; requesterId: string | null; assigneeId: string | null; teamId: string | null; }
 export interface NotifyDeps {
   loadTicket(orgId: string, ticketId: string): Promise<NotifyTicket | null>;
   loadPrefs(orgId: string, userIds: string[]): Promise<Record<string, NotificationPrefs>>;
   loadEmail(userId: string): Promise<string | null>;
   createNotifications(rows: { orgId: string; userId: string; ticketId: string; type: string; title: string; snippet: string }[]): Promise<void>;
-  enqueueEmail(job: { orgId: string; to: string; subject: string; text: string; html: string; headers?: Record<string, string> }): Promise<void>;
+  enqueueEmail(job: { orgId: string; teamId?: string | null; to: string; subject: string; text: string; html: string; headers?: Record<string, string> }): Promise<void>;
   orgEmailEnabled(orgId: string): Promise<boolean>;
-  fromDomain(orgId: string): Promise<string>;
+  /** Domain of the effective from-address (team override or org default) — used for Message-ID threading. */
+  fromDomain(orgId: string, teamId?: string | null): Promise<string>;
   /** Per-event Slack toggles, or null when the org's Slack integration is disabled. */
   orgSlack(orgId: string): Promise<Record<SlackTicketEvent, boolean> | null>;
   enqueueSlack(job: SlackSendJob): Promise<void>;
@@ -30,7 +31,8 @@ export interface NotifyDeps {
 function snippetFor(eventType: string, changes?: Record<string, unknown>): string {
   if (eventType === 'commented') return 'You have a new reply.';
   if (eventType === 'assigned') return 'This ticket is now assigned to you.';
-  return changes?.status ? `Status is now "${String(changes.status)}".` : 'The ticket was updated.';
+  // Status events carry `changes: { from, to }` (see diffTicketActivity).
+  return changes?.to ? `Status is now "${String(changes.to)}".` : 'The ticket was updated.';
 }
 
 export async function processNotificationEvent(job: NotificationEventJob, deps: NotifyDeps): Promise<void> {
@@ -64,13 +66,13 @@ export async function processNotificationEvent(job: NotificationEventJob, deps: 
   await deps.createNotifications(recipients.map((r) => ({ orgId: job.orgId, userId: r.userId, ticketId: ticket.id, type: r.type, title: `#${ticket.number} ${ticket.title}`, snippet })));
 
   if (!(await deps.orgEmailEnabled(job.orgId))) return;
-  const domain = await deps.fromDomain(job.orgId);
+  const domain = await deps.fromDomain(job.orgId, ticket.teamId);
   for (const r of recipients) {
     const p = prefs[r.userId];
     if (!p || !p.emailEnabled || !p[PREF_FOR_TYPE[r.type]]) continue;
     const to = await deps.loadEmail(r.userId);
     if (!to) continue;
     const m = renderNotificationEmail({ type: r.type, snippet }, { ticket, fromDomain: domain, siteUrl: deps.siteUrl });
-    await deps.enqueueEmail({ orgId: job.orgId, to, subject: m.subject, text: m.text, html: m.html, headers: { 'Message-ID': m.messageId } });
+    await deps.enqueueEmail({ orgId: job.orgId, teamId: ticket.teamId, to, subject: m.subject, text: m.text, html: m.html, headers: { 'Message-ID': m.messageId } });
   }
 }

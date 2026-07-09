@@ -50,6 +50,7 @@ function buildTestDeps(
     defaultSchemaId: string;
     defaultTeamId: string | null;
     fromDomain: string;
+    teamAddresses: Record<string, string>;
   },
 ): PollDeps {
   const repos = {
@@ -222,6 +223,7 @@ describe('pollOrgInbound — end-to-end', () => {
               uid: 10,
               messageId: '<a@ext>',
               from: 'user@acme.com',
+              recipients: ['support@desk.acme.com'],
               subject: 'Re: [#42] Help',
               text: 'thanks for the help',
               inReplyTo: null,
@@ -240,6 +242,7 @@ describe('pollOrgInbound — end-to-end', () => {
               uid: 11,
               messageId: '<b@ext>',
               from: 'someone@acme.com',
+              recipients: ['support@desk.acme.com'],
               subject: 'Out of office',
               text: 'I am away',
               inReplyTo: null,
@@ -259,6 +262,7 @@ describe('pollOrgInbound — end-to-end', () => {
       defaultSchemaId: schemaId,
       defaultTeamId: null,
       fromDomain: 'desk.acme.com',
+      teamAddresses: {},
     };
 
     const deps = buildTestDeps(orgId, fakeSource, storage, settings);

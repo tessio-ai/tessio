@@ -33,6 +33,8 @@ export { slackSettingsRepo } from './slack-settings';
 export { notificationsRepo } from './notifications';
 export { processedEmailsRepo } from './processed-emails';
 export { slaSettingsRepo } from './sla-settings';
+export { csatSettingsRepo } from './csat-settings';
+export { csatResponsesRepo } from './csat-responses';
 export { ssoSettingsRepo } from './sso-settings';
 export { auditRepo } from './audit';
 export { agentEnrollmentKeysRepo, agentDevicesRepo, agentSoftwareRepo } from './agents';

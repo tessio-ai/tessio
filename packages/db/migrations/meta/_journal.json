@@ -208,8 +208,22 @@
     {
       "idx": 29,
       "version": "7",
-      "when": 1783546601449,
-      "tag": "0029_military_firebrand",
+      "when": 1783546253233,
+      "tag": "0029_free_leopardon",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1783569140901,
+      "tag": "0030_even_mongu",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1783571086174,
+      "tag": "0031_stormy_bloodaxe",
       "breakpoints": true
     }
   ]

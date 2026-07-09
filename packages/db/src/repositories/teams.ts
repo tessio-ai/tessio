@@ -22,6 +22,11 @@ export function teamsRepo(db: Db) {
         .where(and(eq(teams.orgId, orgId), eq(teams.id, id))).returning();
       return rows[0];
     },
+    async update(orgId: string, id: string, patch: { name?: string; emailAddress?: string | null; emailName?: string | null }) {
+      const rows = await db.update(teams).set({ ...patch, updatedAt: new Date() })
+        .where(and(eq(teams.orgId, orgId), eq(teams.id, id))).returning();
+      return rows[0];
+    },
     /** Un-assign the team from any tickets, then delete it. */
     async remove(orgId: string, id: string) {
       await db.update(tickets).set({ teamId: null, updatedAt: new Date() })

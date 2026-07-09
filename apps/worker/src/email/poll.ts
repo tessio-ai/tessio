@@ -16,6 +16,9 @@ export interface PollSettings {
   defaultTeamId: string | null;
   /** Derived from fromAddress — used to detect loops. */
   fromDomain: string;
+  /** Lowercased team email address → teamId. New tickets sent to one of these
+   *  addresses route to that team instead of defaultTeamId. */
+  teamAddresses: Record<string, string>;
 }
 
 export interface PollDeps {
@@ -141,10 +144,14 @@ export async function pollOrgInbound(orgId: string, deps: PollDeps): Promise<voi
         await deps.publishCommented(orgId, decision.ticketId, authorId);
       } else if (decision.kind === 'new-ticket') {
         const requesterId = senderUser?.id ?? await deps.createRequester(orgId, msg.from);
+        // Route to the team whose address the mail was sent to, if any.
+        const matchedTeamId = msg.recipients
+          .map((addr) => deps.settings.teamAddresses[addr])
+          .find((id) => id !== undefined) ?? null;
         const ticketId = await deps.createTicket({
           orgId,
           schemaId: deps.settings.defaultSchemaId,
-          teamId: deps.settings.defaultTeamId,
+          teamId: matchedTeamId ?? deps.settings.defaultTeamId,
           requesterId,
           title: msg.subject,
           description: msg.text,

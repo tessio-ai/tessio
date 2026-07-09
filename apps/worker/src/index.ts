@@ -3,7 +3,7 @@
 import { loadEnv } from './load-env';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import { createDbClient, aiSettingsRepo, ticketsRepo, usersRepo, ticketAiTriageRepo, ticketEmbeddingsRepo, recordActivity, emailSettingsRepo, slackSettingsRepo, notificationsRepo } from '@tessio/db';
+import { createDbClient, aiSettingsRepo, ticketsRepo, usersRepo, ticketAiTriageRepo, ticketEmbeddingsRepo, recordActivity, emailSettingsRepo, slackSettingsRepo, notificationsRepo, teamsRepo, csatSettingsRepo, csatResponsesRepo } from '@tessio/db';
 import {
   createTessClient,
   triageTicket,
@@ -41,6 +41,7 @@ import { Queue } from 'bullmq';
 import { processWorkflowEvent } from './workflows/process-event';
 import { buildProcessEventDeps, processRunJob } from './workflows/wire';
 import { processNotificationEvent, type NotifyDeps } from './notifications/process';
+import { processCsatSurvey, type CsatDeps } from './notifications/csat';
 import { processEmailSend, type SendDeps } from './email/send';
 import { createMailer } from './email/mailer';
 import { processSlackSend } from './slack/send';
@@ -140,6 +141,7 @@ function buildNotifyDeps(emailQueue: Queue<EmailSendJob>, slackQueue: Queue<Slac
         title: (data.title as string) ?? '',
         requesterId: (t.requesterId as string | null) ?? null,
         assigneeId: (t.assigneeId as string | null) ?? null,
+        teamId: (t.teamId as string | null) ?? null,
       };
     },
     loadPrefs: async (orgId, userIds) => {
@@ -168,9 +170,10 @@ function buildNotifyDeps(emailQueue: Queue<EmailSendJob>, slackQueue: Queue<Slac
       const row = await emailSettingsRepo(db).getOrCreate(orgId);
       return row?.enabled ?? false;
     },
-    fromDomain: async (orgId) => {
+    fromDomain: async (orgId, teamId) => {
+      const team = teamId ? await teamsRepo(db).findById(orgId, teamId) : undefined;
       const row = await emailSettingsRepo(db).getOrCreate(orgId);
-      const addr = row?.fromAddress;
+      const addr = team?.emailAddress ?? row?.fromAddress;
       if (!addr) return 'localhost';
       const at = addr.indexOf('@');
       return at >= 0 ? addr.slice(at + 1) : 'localhost';
@@ -192,24 +195,45 @@ function buildNotifyDeps(emailQueue: Queue<EmailSendJob>, slackQueue: Queue<Slac
   };
 }
 
+function buildCsatDeps(notify: NotifyDeps): CsatDeps {
+  return {
+    loadTicket: notify.loadTicket,
+    loadCsatSettings: async (orgId) => {
+      const row = await csatSettingsRepo(db).getOrCreate(orgId);
+      return { enabled: row?.enabled ?? false, question: row?.question ?? null };
+    },
+    createSurvey: async (input) => (await csatResponsesRepo(db).createSurvey(input)) !== null,
+    loadPrefs: notify.loadPrefs,
+    loadEmail: notify.loadEmail,
+    enqueueEmail: notify.enqueueEmail,
+    orgEmailEnabled: notify.orgEmailEnabled,
+    fromDomain: notify.fromDomain,
+    siteUrl: notify.siteUrl,
+  };
+}
+
 function buildSendDeps(): SendDeps {
   return {
-    loadMailer: async (orgId) => {
+    loadMailer: async (orgId, teamId) => {
       const row = await emailSettingsRepo(db).getOrCreate(orgId);
       if (!row?.enabled || !row.smtpHost || !row.fromAddress) return null;
       const secretKey = process.env.TESSIO_SECRET_KEY;
       const pass = row.smtpPasswordCiphertext && secretKey
         ? decryptSecret(row.smtpPasswordCiphertext, secretKey)
         : undefined;
+      // A team address overrides the org from/reply-to so replies land back on
+      // the team's mailbox (transport stays the org-level SMTP account).
+      const team = teamId ? await teamsRepo(db).findById(orgId, teamId) : undefined;
+      const teamAddress = team?.emailAddress ?? null;
       return createMailer({
         host: row.smtpHost,
         port: row.smtpPort ?? 587,
         secure: row.smtpSecure ?? true,
         user: row.smtpUser ?? undefined,
         pass,
-        fromName: row.fromName ?? undefined,
-        fromAddress: row.fromAddress,
-        replyTo: row.replyTo ?? undefined,
+        fromName: teamAddress ? (team?.emailName ?? undefined) : (row.fromName ?? undefined),
+        fromAddress: teamAddress ?? row.fromAddress,
+        replyTo: teamAddress ?? row.replyTo ?? undefined,
       });
     },
   };
@@ -230,7 +254,11 @@ const workflowRunsWorker = new Worker<WorkflowRunJobData>(
 );
 const notificationsWorker = new Worker<NotificationEventJob>(
   NOTIFICATIONS_QUEUE,
-  async (job) => processNotificationEvent(job.data, buildNotifyDeps(emailSendQueue, slackSendQueue)),
+  async (job) => {
+    const notify = buildNotifyDeps(emailSendQueue, slackSendQueue);
+    await processNotificationEvent(job.data, notify);
+    await processCsatSurvey(job.data, buildCsatDeps(notify));
+  },
   { connection },
 );
 const emailSendWorker = new Worker<EmailSendJob>(

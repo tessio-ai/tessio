@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { listUsers, createUser, updateUser, importUsers, type UserRow, type ImportUserInput } from '../../api/users';
-import { listTeams, createTeam, renameTeam, deleteTeam } from '../../api/teams';
+import { listTeams, createTeam, renameTeam, updateTeam, deleteTeam, type UpdateTeamInput } from '../../api/teams';
 import { getOrg, updateOrg } from '../../api/org';
 import { getPortalSettings, updatePortalSettings, type UpdatePortalSettingsInput } from '../../api/portal';
 import { listTeamMembers, addTeamMember, removeTeamMember } from '../../api/team-members';
@@ -13,6 +13,7 @@ import { getEmailSettings, putEmailSettings, testSmtp, type UpdateEmailSettingsI
 import { getSlackSettings, putSlackSettings, testSlack, type UpdateSlackSettingsInput } from '../../api/slack';
 import { getNotificationPrefs, putNotificationPrefs, type NotificationPrefs } from '../../api/notifications';
 import { getSlaSettings, putSlaSettings, type UpdateSlaSettingsInput } from '../../api/sla';
+import { getCsatSettings, putCsatSettings, type UpdateCsatSettingsInput } from '../../api/csat';
 import { getEntitlements } from '../../api/entitlements';
 
 export const useOrg = () => useQuery({ queryKey: ['org'], queryFn: getOrg });
@@ -68,6 +69,13 @@ export function useRenameTeam() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => renameTeam(id, name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['teams'] }),
+  });
+}
+export function useUpdateTeam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: UpdateTeamInput }) => updateTeam(id, patch),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['teams'] }),
   });
 }
@@ -180,6 +188,16 @@ export function useUpdateSlaSettings() {
   return useMutation({
     mutationFn: (body: UpdateSlaSettingsInput) => putSlaSettings(body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sla-settings'] }),
+  });
+}
+
+export const useCsatSettings = () => useQuery({ queryKey: ['csat-settings'], queryFn: getCsatSettings });
+
+export function useUpdateCsatSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateCsatSettingsInput) => putCsatSettings(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['csat-settings'] }),
   });
 }
 
