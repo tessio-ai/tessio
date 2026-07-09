@@ -6,7 +6,7 @@ export interface ActivityRow {
   id: string;
   actorId: string | null;
   eventType: string;
-  changes?: { from?: unknown; to?: unknown; field?: string } | null;
+  changes?: { from?: unknown; to?: unknown; field?: string; rating?: number } | null;
   createdAt: string;
 }
 

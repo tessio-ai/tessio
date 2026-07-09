@@ -397,6 +397,11 @@ export function ReportBuilder({ reportId, go }: { reportId: string; go: Go }) {
                   <option key={m.id} value={m.id}>{m.label}</option>
                 ))}
               </optgroup>
+              <optgroup label="Satisfaction">
+                {REPORT_MEASURES.filter((m) => m.group === 'csat').map((m) => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </optgroup>
               {customDataFields.length > 0 && (
                 <optgroup label="Custom fields">
                   {customDataFields.map((key) => (

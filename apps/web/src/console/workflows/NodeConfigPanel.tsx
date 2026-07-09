@@ -33,6 +33,7 @@ const EVENT_LABELS: Record<(typeof triggerEvents)[number], string> = {
   assigned: 'Assignee changed',
   team: 'Team changed',
   field_changed: 'A field changed',
+  csat_submitted: 'Satisfaction rating submitted',
 };
 
 const OPS: { value: FilterLeaf['op']; label: string }[] = [

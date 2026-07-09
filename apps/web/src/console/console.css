@@ -1263,6 +1263,24 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
 }
 .portal-bool { display: inline-flex; align-items: center; gap: 6px; }
 
+/* Satisfaction survey (requester portal) */
+.rp-mine-item { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 10px; background: var(--background); }
+.rp-mine-item .rp-mine-row { border: none; }
+.rp-csat { border-top: 1px dashed var(--border); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.rp-csat-q { font-size: var(--t-small); color: var(--muted-foreground); }
+.rp-csat-stars { display: flex; gap: 4px; }
+.rp-csat-star { background: none; border: none; padding: 2px; cursor: pointer; color: var(--faint-foreground); display: grid; place-items: center; border-radius: 6px; }
+.rp-csat-star:hover, .rp-csat-star.on { color: var(--warning); }
+.rp-csat-star:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.rp-csat-star svg { fill: none; }
+.rp-csat-star.on svg { fill: currentColor; }
+.rp-csat-comment { font: inherit; font-size: var(--t-small); padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--foreground); resize: vertical; min-height: 56px; }
+.rp-csat-actions { display: flex; align-items: center; gap: 10px; }
+/* --pa (form accent) is unset outside form pages — fall back to the workspace accent. */
+.rp-csat .ps-btn.primary { background: var(--pa, var(--primary)); }
+.rp-csat-done { display: inline-flex; align-items: center; gap: 6px; font-size: var(--t-small); color: var(--muted-foreground); }
+.rp-csat-err { font-size: var(--t-caption); color: var(--danger); }
+
 /* RelationshipGraph */
 .rel-graph { display: flex; flex-direction: column; gap: 16px; }
 .rel-head { display: flex; align-items: center; justify-content: space-between; }

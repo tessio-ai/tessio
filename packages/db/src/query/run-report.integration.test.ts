@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { createTestDb, resetDb, seedOrgAndSchema } from '../testing/test-db';
 import { ticketsRepo } from '../repositories/tickets';
+import { csatResponsesRepo } from '../repositories/csat-responses';
 import { users, schemas, ticketAiTriage, teams, teamSchemas, teamMembers } from '../schema';
 import { runReport } from './run-report';
 import type { ReportDefinition } from '@tessio/shared';
@@ -341,6 +342,39 @@ describe('runReport', () => {
     const result = await runReport(db, orgId, def, { userId: 'admin', role: 'admin' });
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].value).toBeCloseTo(6, 1);
+  });
+
+  it('csat measures: avg rating, response count, and response rate over sent surveys', async () => {
+    const { orgId, schemaId, schemaVersion } = await seedOrgAndSchema(db, 'ticket');
+    const repo = ticketsRepo(db);
+    const csat = csatResponsesRepo(db);
+    const t1 = await repo.create({ orgId, schemaId, schemaVersion, status: 'resolved' });
+    const t2 = await repo.create({ orgId, schemaId, schemaVersion, status: 'closed' });
+    const t3 = await repo.create({ orgId, schemaId, schemaVersion, status: 'resolved' });
+    await repo.create({ orgId, schemaId, schemaVersion, status: 'open' }); // never surveyed
+
+    // Two answered surveys (5 and 2), one sent-but-unanswered.
+    const requesterId = await mkUser(orgId);
+    await csat.submit({ orgId, ticketId: t1.id, requesterId, rating: 5, comment: null });
+    await csat.submit({ orgId, ticketId: t2.id, requesterId, rating: 2, comment: null });
+    await csat.createSurvey({ orgId, ticketId: t3.id, requesterId });
+
+    const adminScope = { userId: 'admin', role: 'admin' as const };
+
+    const avg = await runReport(db, orgId, { source: 'tickets', measure: { id: 'avg_csat' }, visualization: 'number' }, adminScope);
+    expect(avg.rows[0].value).toBeCloseTo(3.5, 3); // (5 + 2) / 2
+
+    const count = await runReport(db, orgId, { source: 'tickets', measure: { id: 'count_csat_responses' }, visualization: 'number' }, adminScope);
+    expect(count.rows[0].value).toBe(2);
+
+    const rate = await runReport(db, orgId, { source: 'tickets', measure: { id: 'pct_csat_responded' }, visualization: 'number' }, adminScope);
+    expect(rate.rows[0].value).toBeCloseTo(66.667, 1); // 2 answered of 3 sent
+
+    // grouped by rating: distribution buckets
+    const dist = await runReport(db, orgId, { source: 'tickets', measure: { id: 'count_csat_responses' }, groupBy: { field: 'csat.rating' }, visualization: 'bar' }, adminScope);
+    const byKey = Object.fromEntries(dist.rows.map((r) => [r.key, r.value]));
+    expect(byKey['5']).toBe(1);
+    expect(byKey['2']).toBe(1);
   });
 
   it('date-range preset 30d: only counts tickets created within last 30 days', async () => {

@@ -10,7 +10,7 @@ import { filterNode } from './filter';
  */
 
 /** Ticket activity events a workflow can trigger on (mirrors the events the API records). */
-export const triggerEvents = ['created', 'status', 'priority', 'assigned', 'team', 'field_changed'] as const;
+export const triggerEvents = ['created', 'status', 'priority', 'assigned', 'team', 'field_changed', 'csat_submitted'] as const;
 export type TriggerEvent = (typeof triggerEvents)[number];
 
 export const HTTP_TIMEOUT_DEFAULT_MS = 10_000;
