@@ -5,10 +5,10 @@ import { pollOrgInbound, type PollDeps } from './poll';
 
 function deps(over: Partial<PollDeps> = {}): PollDeps {
   return {
-    settings: { lastSeenUid: 0, mailbox: 'INBOX', acceptNewSenders: false, defaultSchemaId: 'sch-1', defaultTeamId: null, fromDomain: 'desk.acme.com' } satisfies PollDeps['settings'],
+    settings: { lastSeenUid: 0, mailbox: 'INBOX', acceptNewSenders: false, defaultSchemaId: 'sch-1', defaultTeamId: null, fromDomain: 'desk.acme.com', teamAddresses: {} } satisfies PollDeps['settings'],
     knownUidValidity: null,
     source: { fetchSince: vi.fn(async () => ({ uidValidity: 1, messages: [
-      { uid: 5, messageId: '<m5@ext>', from: 'user@acme.com', subject: 'Re: [#42] Help', text: 'thanks', inReplyTo: null, references: [], autoSubmitted: null, attachments: [] },
+      { uid: 5, messageId: '<m5@ext>', from: 'user@acme.com', recipients: ['support@desk.acme.com'], subject: 'Re: [#42] Help', text: 'thanks', inReplyTo: null, references: [], autoSubmitted: null, attachments: [] },
     ] })) },
     claimMessage: vi.fn(async () => true),
     linkTicket: vi.fn(async () => {}),
@@ -40,7 +40,7 @@ it('threads a [#42] reply into a public comment and advances the cursor', async 
 it('does not inject a [#42] comment when the sender is not the ticket requester', async () => {
   // Stranger references someone else's ticket by number; must not become a comment.
   const d = deps({
-    settings: { lastSeenUid: 0, mailbox: 'INBOX', acceptNewSenders: true, defaultSchemaId: 'sch-1', defaultTeamId: null, fromDomain: 'desk.acme.com' },
+    settings: { lastSeenUid: 0, mailbox: 'INBOX', acceptNewSenders: true, defaultSchemaId: 'sch-1', defaultTeamId: null, fromDomain: 'desk.acme.com', teamAddresses: {} },
     ticketRequesterId: vi.fn(async () => 'someone-else'),
   });
   await pollOrgInbound('o1', d);
@@ -63,9 +63,9 @@ it('poison message: addComment throws, loop does not throw, advanceCursor still 
         uidValidity: 1,
         messages: [
           // uid 3 — poison: addComment will throw for this one
-          { uid: 3, messageId: '<poison@ext>', from: 'user@acme.com', subject: 'Re: [#42] Help', text: 'bad', inReplyTo: null, references: [], autoSubmitted: null, attachments: [] },
+          { uid: 3, messageId: '<poison@ext>', from: 'user@acme.com', recipients: [], subject: 'Re: [#42] Help', text: 'bad', inReplyTo: null, references: [], autoSubmitted: null, attachments: [] },
           // uid 7 — good message that should still be processed
-          { uid: 7, messageId: '<good@ext>', from: 'user@acme.com', subject: 'Re: [#42] Help', text: 'good', inReplyTo: null, references: [], autoSubmitted: null, attachments: [] },
+          { uid: 7, messageId: '<good@ext>', from: 'user@acme.com', recipients: [], subject: 'Re: [#42] Help', text: 'good', inReplyTo: null, references: [], autoSubmitted: null, attachments: [] },
         ],
       })),
     },
@@ -80,6 +80,30 @@ it('poison message: addComment throws, loop does not throw, advanceCursor still 
   expect(d.advanceCursor).toHaveBeenCalledWith('o1', 7, 1);
   // Good message (uid 7) was still processed — addComment called twice (second call succeeds)
   expect(d.addComment).toHaveBeenCalledTimes(2);
+});
+
+it('routes a new ticket to the team whose address received the mail', async () => {
+  const d = deps({
+    settings: { lastSeenUid: 0, mailbox: 'INBOX', acceptNewSenders: true, defaultSchemaId: 'sch-1', defaultTeamId: 'team-default', fromDomain: 'desk.acme.com', teamAddresses: { 'hr@desk.acme.com': 'team-hr' } },
+    source: { fetchSince: vi.fn(async () => ({ uidValidity: 1, messages: [
+      { uid: 5, messageId: '<m5@ext>', from: 'user@acme.com', recipients: ['hr@desk.acme.com'], subject: 'Payroll question', text: 'hi', inReplyTo: null, references: [], autoSubmitted: null, attachments: [] },
+    ] })) },
+    ticketByNumber: vi.fn(async () => null),
+  });
+  await pollOrgInbound('o1', d);
+  expect(d.createTicket).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-hr' }));
+});
+
+it('falls back to the default team when no recipient matches a team address', async () => {
+  const d = deps({
+    settings: { lastSeenUid: 0, mailbox: 'INBOX', acceptNewSenders: true, defaultSchemaId: 'sch-1', defaultTeamId: 'team-default', fromDomain: 'desk.acme.com', teamAddresses: { 'hr@desk.acme.com': 'team-hr' } },
+    source: { fetchSince: vi.fn(async () => ({ uidValidity: 1, messages: [
+      { uid: 5, messageId: '<m5@ext>', from: 'user@acme.com', recipients: ['support@desk.acme.com'], subject: 'General question', text: 'hi', inReplyTo: null, references: [], autoSubmitted: null, attachments: [] },
+    ] })) },
+    ticketByNumber: vi.fn(async () => null),
+  });
+  await pollOrgInbound('o1', d);
+  expect(d.createTicket).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-default' }));
 });
 
 it('passes knownUidValidity to fetchSince', async () => {

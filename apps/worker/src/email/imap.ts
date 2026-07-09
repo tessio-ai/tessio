@@ -1,8 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { ImapFlow } from 'imapflow';
-import { simpleParser } from 'mailparser';
+import { simpleParser, type AddressObject } from 'mailparser';
 import type { ParsedEmail } from './inbound';
+
+/** Flatten mailparser's To/Cc shapes plus Delivered-To/X-Original-To headers into lowercased addresses. */
+function collectRecipients(p: Awaited<ReturnType<typeof simpleParser>>): string[] {
+  const out = new Set<string>();
+  const addAddressObjects = (v: AddressObject | AddressObject[] | undefined) => {
+    for (const obj of Array.isArray(v) ? v : v ? [v] : []) {
+      for (const a of obj.value) if (a.address) out.add(a.address.toLowerCase());
+    }
+  };
+  addAddressObjects(p.to);
+  addAddressObjects(p.cc);
+  for (const h of ['delivered-to', 'x-original-to']) {
+    const raw = p.headers.get(h);
+    for (const v of Array.isArray(raw) ? raw : raw ? [raw] : []) {
+      const m = String(typeof v === 'object' && 'text' in (v as object) ? (v as { text: string }).text : v).match(/[^\s<>,;"]+@[^\s<>,;"]+/g);
+      for (const addr of m ?? []) out.add(addr.toLowerCase());
+    }
+  }
+  return [...out];
+}
 
 export interface ImapConfig { host: string; port: number; secure: boolean; user: string; pass: string; mailbox: string; }
 export interface FetchResult { messages: (ParsedEmail & { uid: number })[]; uidValidity: number | null; }
@@ -30,6 +50,7 @@ export function createImapSource(cfg: ImapConfig): ImapSource {
               uid: msg.uid,
               messageId: p.messageId ?? `<uid-${msg.uid}@${cfg.host}>`,
               from: p.from?.value?.[0]?.address ?? '',
+              recipients: collectRecipients(p),
               subject: p.subject ?? '',
               text: p.text ?? '',
               inReplyTo: p.inReplyTo ?? null,

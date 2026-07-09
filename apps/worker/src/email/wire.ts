@@ -8,6 +8,7 @@ import {
   usersRepo,
   attachmentsRepo,
   schemasRepo,
+  teamsRepo,
   addComment,
   type Db,
 } from '@tessio/db';
@@ -69,6 +70,12 @@ export async function buildOrgPollDeps(
 
   const fromDomain = extractDomain(row.fromAddress);
 
+  // Per-team addresses: mail sent to one of these routes new tickets to that team.
+  const teamAddresses: Record<string, string> = {};
+  for (const team of await teamsRepo(db).list(orgId)) {
+    if (team.emailAddress) teamAddresses[team.emailAddress.toLowerCase()] = team.id;
+  }
+
   const settings: PollSettings = {
     lastSeenUid: row.lastSeenUid,
     mailbox: row.mailbox,
@@ -76,6 +83,7 @@ export async function buildOrgPollDeps(
     defaultSchemaId: row.defaultSchemaId ?? '',
     defaultTeamId: row.defaultTeamId ?? null,
     fromDomain,
+    teamAddresses,
   };
 
   const notifQueue = getNotificationsQueue(connection);

@@ -5,6 +5,8 @@ import { parseTicketIdFromHeaders } from '@tessio/shared';
 export interface ParsedEmailAttachment { filename: string; contentType: string; content: Buffer; size: number; }
 export interface ParsedEmail {
   messageId: string; from: string; subject: string; text: string;
+  /** All recipient addresses (To/Cc/Delivered-To), lowercased — used to route new tickets to a team by its address. */
+  recipients: string[];
   inReplyTo: string | null; references: string[]; autoSubmitted: string | null; attachments: ParsedEmailAttachment[];
 }
 export interface InboundLookup {
