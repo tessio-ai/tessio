@@ -20,6 +20,7 @@ import { registerTeamSchemaRoutes } from './resources/team-schemas';
 import { registerFormRoutes } from './resources/forms';
 import { registerSchemaWriteRoutes } from './resources/schema-write';
 import { registerPortalSettingsRoutes } from './resources/portal-settings';
+import { registerLoginSettingsRoutes } from './resources/login-settings';
 import { registerAiSettingsRoutes, registerAiIdentityRoutes } from './resources/ai-settings';
 import { registerTicketAiRoutes } from './resources/ticket-ai';
 import { registerKbAiRoutes } from './resources/kb-ai';
@@ -124,6 +125,7 @@ export function registerV1Routes(
     registerFormRoutes(adminScope, db);
     registerSchemaWriteRoutes(adminScope, db);
     registerPortalSettingsRoutes(adminScope, db);
+    registerLoginSettingsRoutes(adminScope, db);
     registerAiSettingsRoutes(adminScope, db);
     registerEmailSettingsRoutes(adminScope, db);
     registerSlackSettingsRoutes(adminScope, db);

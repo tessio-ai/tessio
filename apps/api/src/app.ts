@@ -12,6 +12,7 @@ import { registerAuthContext } from './auth/context';
 import { registerOpenApi } from './openapi';
 import { registerV1Routes } from './routes';
 import { registerAuthRoutes } from './auth/routes';
+import { registerLoginBrandingRoute } from './resources/login-settings';
 import { setSessionCookie } from './auth/cookies';
 import { recordAudit, safeMeta } from './audit';
 import { registerAgentIngestRoutes } from './agents/ingest-routes';
@@ -66,6 +67,8 @@ export function buildApp(opts: BuildAppOptions): FastifyInstance {
     async (v1) => {
       await registerOpenApi(v1);
       registerAuthRoutes(v1, opts.db);
+      // Sign-in screen branding — public, read-only (see resources/login-settings.ts).
+      registerLoginBrandingRoute(v1, opts.db);
       // Enterprise public (pre-session) routes, e.g. SSO start/callback/info.
       enterprise?.registerPublic?.(v1, eeCtx);
       // Endpoint-agent ingest: Bearer-token auth, NOT the session-cookie scope below.

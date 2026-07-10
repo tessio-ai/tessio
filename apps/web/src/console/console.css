@@ -1007,7 +1007,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
 .ps-btn { font: inherit; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 10px; cursor: pointer; border: 1px solid #e2e4e9; background: #fff; color: #16181d; white-space: nowrap; }
 .ps-btn.primary { background: var(--pa); color: #fff; border-color: transparent; }
 
-/* ---- Login (ambient aurora + frosted glass) ---- */
+/* ---- Login (daylight sky) ---- */
 /* The entry screen is intentionally its own branded surface, independent of the
    app light/dark theme. Pure-CSS gradients only (no external assets) to stay
    within the strict CSP. */
@@ -1016,109 +1016,176 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 88px 24px 48px;
   overflow: hidden;
-  /* Rich indigo base so the aurora blobs read as vivid colour, not faint glows. */
-  background: #14102e;
+  color: #182335;
+  background: linear-gradient(180deg, #a9d4f2 0%, #c6e3f8 34%, #e4f2fc 66%, #f4fafe 100%);
   isolation: isolate;
 }
 
-/* Aurora: large, vivid, slowly-drifting colour fields built from the brand
-   indigo→violet palette plus cool/warm accents. */
-.login-aurora { position: absolute; inset: -25%; z-index: -2; filter: blur(56px); }
-.login-aurora i {
+/* Sky decor: faint concentric arcs behind the card + soft cloud banks below. */
+.login-sky { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.login-arc {
   position: absolute;
-  display: block;
+  left: 50%; top: 58%;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
   border-radius: 50%;
-  opacity: 0.9;
-  mix-blend-mode: screen;
-  will-change: transform;
-  animation: login-drift 22s ease-in-out infinite alternate;
 }
-.login-aurora i:nth-child(1) { width: 52vw; height: 52vw; left: -8vw;  top: -12vw; background: radial-gradient(circle at 35% 35%, #6d5efc 0%, rgba(109,94,252,0) 72%); animation-delay: 0s; }
-.login-aurora i:nth-child(2) { width: 48vw; height: 48vw; right: -10vw; top: -8vw; background: radial-gradient(circle at 60% 40%, #b16cff 0%, rgba(177,108,255,0) 72%); animation-delay: -4s; }
-.login-aurora i:nth-child(3) { width: 50vw; height: 50vw; left: 4vw;   bottom: -18vw; background: radial-gradient(circle at 40% 60%, #3b82f6 0%, rgba(59,130,246,0) 72%); animation-delay: -8s; }
-.login-aurora i:nth-child(4) { width: 40vw; height: 40vw; right: -6vw; bottom: -14vw; background: radial-gradient(circle at 50% 50%, #ec4899 0%, rgba(236,72,153,0) 74%); opacity: 0.8; animation-delay: -12s; }
-/* Soft halo behind the card + gentle edge vignette for depth (kept light so the
-   colour still reaches the corners). */
-.login-screen::after {
+.login-arc.a1 { width: 760px;  height: 760px; }
+.login-arc.a2 { width: 1120px; height: 1120px; border-color: rgba(255, 255, 255, 0.4); }
+.login-arc.a3 { width: 1500px; height: 1500px; border-color: rgba(255, 255, 255, 0.28); }
+.login-cloud {
+  position: absolute;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0));
+  filter: blur(16px);
+  border-radius: 50%;
+}
+.login-cloud.c1 { width: 64vw; height: 34vh; left: -14vw;  bottom: -12vh; }
+.login-cloud.c2 { width: 60vw; height: 30vh; right: -12vw; bottom: -10vh; }
+.login-cloud.c3 { width: 50vw; height: 26vh; left: 22vw;   bottom: -12vh; }
+.login-cloud.c4 { width: 30vw; height: 12vh; left: 4vw;    bottom: 16vh;  opacity: 0.6; }
+.login-cloud.c5 { width: 26vw; height: 10vh; right: 6vw;   bottom: 22vh;  opacity: 0.55; }
+/* Horizon haze — a bright bank the clouds sit in, like flying above cover. */
+.login-sky::after {
   content: '';
-  position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(38vw 38vw at 50% 46%, rgba(160,150,255,0.16), transparent 70%),
-    radial-gradient(130% 120% at 50% 8%, transparent 62%, rgba(4,2,20,0.5) 100%);
+  position: absolute; left: 0; right: 0; bottom: 0; height: 30vh;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 60%, rgba(255,255,255,0.85) 100%);
 }
 
-@keyframes login-drift {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to   { transform: translate3d(4vw, 3vw, 0) scale(1.12); }
+/* Workspace identity, pinned to the top-left like a product wordmark. */
+.login-topbar {
+  position: absolute;
+  top: 26px; left: 30px;
+  display: flex; align-items: center; gap: 10px;
 }
-@media (prefers-reduced-motion: reduce) {
-  .login-aurora i { animation: none; }
+.login-brandmark {
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(24, 44, 74, 0.18);
+  background: #fff;
 }
+.login-brandmark-default {
+  display: grid; place-items: center;
+  background: #181c25; color: #fff;
+}
+.login-brandname { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; color: #182335; }
 
 .login-card {
-  width: 400px;
+  width: 420px;
   max-width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  padding: 34px 32px;
-  border-radius: 20px;
-  color: #f4f5fb;
-  /* Frosted glass */
-  background: linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
-  border: 1px solid rgba(255,255,255,0.18);
-  box-shadow: 0 24px 60px rgba(6, 8, 30, 0.45), inset 0 1px 0 rgba(255,255,255,0.22);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
-  backdrop-filter: blur(22px) saturate(140%);
+  align-items: center;
+  padding: 40px 36px 34px;
+  border-radius: 26px;
+  background: linear-gradient(180deg, #e0f1fb 0%, #f4fafd 34%, #ffffff 62%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 32px 64px -24px rgba(45, 84, 128, 0.35),
+    0 10px 28px rgba(45, 84, 128, 0.12);
 }
 
-.login-brand { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 8px; text-align: center; }
-.login-logo {
-  width: 52px; height: 52px; border-radius: 15px;
-  background: linear-gradient(150deg, #6366f1, #a855f7);
-  color: #fff; font-weight: 800; font-size: 24px;
+/* Floating app badge above the headline: the uploaded logo, or a stock glyph. */
+.login-badge {
+  width: 64px; height: 64px;
+  border-radius: 19px;
   display: grid; place-items: center;
-  box-shadow: 0 10px 26px rgba(99, 102, 241, 0.5), inset 0 1px 0 rgba(255,255,255,0.4);
+  margin-bottom: 20px;
+  color: #2a3242;
+  background: linear-gradient(180deg, #ffffff, #eef3f8);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 28px -10px rgba(45, 84, 128, 0.35), 0 2px 6px rgba(45, 84, 128, 0.12);
 }
-.login-title { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; color: #fff; }
-.login-subtitle { font-size: 13.5px; color: rgba(233,235,245,0.72); margin-top: -6px; }
+.login-badge img { width: 40px; height: 40px; border-radius: 10px; object-fit: contain; }
 
-.login-field { display: flex; flex-direction: column; gap: 6px; font-size: var(--t-small); font-weight: 500; color: rgba(233,235,245,0.82); }
-.login-field input {
-  padding: 11px 13px;
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: 11px;
-  font-size: 14px;
-  color: #fff;
-  background: rgba(255,255,255,0.08);
+.login-title { font-size: 25px; font-weight: 700; letter-spacing: -0.02em; color: #171e2b; text-align: center; }
+.login-subtitle { font-size: 14px; line-height: 1.5; color: #7a8698; text-align: center; margin: 8px 0 24px; max-width: 320px; }
+
+.login-form { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+
+/* Pill inputs with a leading icon (and a trailing eye toggle on password). */
+.login-field {
+  display: flex; align-items: center; gap: 10px;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: #edf1f5;
+  border: 1px solid #e1e7ee;
   transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
-.login-field input::placeholder { color: rgba(233,235,245,0.4); }
-.login-field input:focus {
-  outline: none;
-  border-color: rgba(165,168,250,0.9);
-  background: rgba(255,255,255,0.12);
-  box-shadow: 0 0 0 3px rgba(129, 120, 245, 0.35);
+.login-field:focus-within {
+  background: #fff;
+  border-color: #9db4cc;
+  box-shadow: 0 0 0 3px rgba(120, 160, 205, 0.22);
 }
-.login-field input:-webkit-autofill { -webkit-text-fill-color: #fff; transition: background-color 9999s; }
+.login-field .lf-icon { color: #8b97a7; flex: none; }
+.login-field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 14.5px;
+  color: #182335;
+}
+.login-field input::placeholder { color: #98a3b3; }
+.login-field input:focus { outline: none; }
+.login-field input:-webkit-autofill { -webkit-text-fill-color: #182335; transition: background-color 9999s; }
+.login-eye {
+  display: grid; place-items: center;
+  border: none; background: none; padding: 4px; margin-right: -4px;
+  color: #8b97a7; cursor: pointer; border-radius: 8px;
+}
+.login-eye:hover { color: #556172; }
 
-.login-error { color: #fecdd3; background: rgba(190, 18, 60, 0.28); border: 1px solid rgba(253, 164, 175, 0.35); padding: 9px 11px; border-radius: 10px; font-size: var(--t-small); }
+.login-error { width: 100%; color: #b3262e; background: #fdecec; border: 1px solid #f4c7c9; padding: 9px 11px; border-radius: 10px; font-size: var(--t-small); margin-bottom: 12px; }
+.login-form .login-error { margin-bottom: 0; }
 
-/* On the glass surface the primary button carries the brand gradient. */
-.login-submit { justify-content: center; margin-top: 6px; padding: 11px 16px; font-weight: 600; border: none; color: #fff; background: linear-gradient(150deg, #6366f1, #8b5cf6); box-shadow: 0 10px 24px rgba(99,102,241,0.45); }
-.login-submit:hover:not(:disabled) { filter: brightness(1.06); }
+.login-submit {
+  margin-top: 8px;
+  height: 50px;
+  border: none;
+  border-radius: 14px;
+  background: #16181d;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 24px -10px rgba(22, 24, 29, 0.5);
+  transition: background .15s ease, transform .1s ease;
+}
+.login-submit:hover:not(:disabled) { background: #23262e; }
+.login-submit:active:not(:disabled) { transform: translateY(1px); }
 .login-submit:disabled { opacity: 0.7; cursor: default; }
-/* SSO button reads as the secondary option: subtle glass, not the gradient. */
-.login-sso { justify-content: center; padding: 11px 16px; font-weight: 600; color: #fff; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.2); }
-.login-sso:hover { background: rgba(255,255,255,0.16); }
 
-.login-divider { display: flex; align-items: center; gap: 10px; color: rgba(233,235,245,0.55); font-size: var(--t-small); }
-.login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.16); }
+/* Dotted "or" divider + secondary SSO action, per the reference layout. */
+.login-divider {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  margin: 18px 0 14px;
+  color: #8b97a7; font-size: 13px; white-space: nowrap;
+}
+.login-divider::before, .login-divider::after { content: ''; flex: 1; border-top: 2px dotted #c8d5e2; }
+
+.login-sso {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid #e1e7ee;
+  background: #fff;
+  color: #182335;
+  font: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(45, 84, 128, 0.08);
+  transition: background .15s ease, border-color .15s ease;
+}
+.login-sso:hover { background: #f4f8fc; border-color: #cdd9e5; }
 
 @media (max-width: 480px) {
-  .login-card { padding: 26px 22px; border-radius: 16px; }
+  .login-card { padding: 30px 22px 26px; border-radius: 20px; }
+  .login-topbar { top: 18px; left: 18px; }
 }
 .app-loading { min-height: 100vh; display: grid; place-items: center; color: var(--muted-foreground); }
 
@@ -1402,6 +1469,55 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
 .bp-navitem.active { background: var(--primary-tint); color: var(--primary); }
 .bp-navitem.active .ico { color: var(--primary); }
 .bp-actions { display: flex; gap: 8px; align-items: center; padding-top: 4px; }
+
+/* Sign-in page branding (settings card + miniature preview of the login screen) */
+.slb-logo-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.slb-logo-preview {
+  width: 56px; height: 56px; border-radius: 14px; flex: none;
+  display: grid; place-items: center;
+  background: var(--muted); border: 1px dashed var(--border); color: var(--muted-foreground);
+}
+.slb-logo-preview img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; }
+.slb-preview {
+  width: 300px; max-width: 100%;
+  border-radius: var(--r-lg); overflow: hidden; position: relative;
+  padding: 34px 24px 22px;
+  background: linear-gradient(180deg, #a9d4f2 0%, #d3e9f9 55%, #f0f8fd 100%);
+  border: 1px solid var(--border);
+}
+.slb-preview-topbar {
+  position: absolute; top: 10px; left: 12px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; color: #182335;
+}
+.slb-mark { width: 18px; height: 18px; border-radius: 5px; object-fit: cover; background: #fff; }
+.slb-mark-default { display: grid; place-items: center; background: #181c25; color: #fff; }
+.slb-preview-card {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 18px 16px 14px; border-radius: 14px;
+  background: linear-gradient(180deg, #e0f1fb 0%, #ffffff 60%);
+  border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 14px 28px -14px rgba(45, 84, 128, 0.4);
+}
+.slb-badge {
+  width: 34px; height: 34px; border-radius: 10px; margin-bottom: 8px;
+  display: grid; place-items: center; color: #2a3242;
+  background: linear-gradient(180deg, #ffffff, #eef3f8);
+  box-shadow: 0 6px 12px -5px rgba(45, 84, 128, 0.35);
+}
+.slb-badge img { width: 22px; height: 22px; object-fit: contain; border-radius: 5px; }
+.slb-headline { font-size: 13px; font-weight: 700; color: #171e2b; text-align: center; }
+.slb-tagline { font-size: 9.5px; line-height: 1.4; color: #7a8698; text-align: center; margin: 3px 0 10px; }
+.slb-input {
+  width: 100%; height: 22px; border-radius: 6px; margin-bottom: 6px;
+  background: #edf1f5; border: 1px solid #e1e7ee;
+  font-size: 9px; color: #98a3b3; display: flex; align-items: center; padding: 0 8px;
+}
+.slb-btn {
+  width: 100%; height: 24px; border-radius: 7px; margin-top: 2px;
+  background: #16181d; color: #fff; font-size: 10px; font-weight: 600;
+  display: grid; place-items: center;
+}
 
 .mem-toolbar { display: flex; align-items: center; gap: 10px; margin: 18px 0 14px; flex-wrap: wrap; }
 .mem-tabs { display: inline-flex; padding: 2px; background: var(--muted); border-radius: var(--r-md); border: 1px solid var(--border); }

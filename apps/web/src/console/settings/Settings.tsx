@@ -12,6 +12,7 @@ import type { ImportUserInput, ImportUsersResult } from '../../api/users';
 import {
   useOrg, useUpdateOrg,
   usePortalSettings, useUpdatePortalSettings,
+  useLoginSettings, useUpdateLoginSettings,
   useUsers, useCreateUser, useUpdateUser, useImportUsers,
   useTeams, useCreateTeam, useUpdateTeam, useDeleteTeam,
   useTeamMembers, useAddTeamMember, useRemoveTeamMember,
@@ -243,7 +244,149 @@ function BrandingSettings() {
           </div>
         </div>
       </div>
+
+      <SignInBrandingCard />
     </>
+  );
+}
+
+/* ---------- Sign-in page branding ---------- */
+interface SignInDraft { brandName: string; logo: string; headline: string; tagline: string }
+
+/** Read an uploaded image and downscale it so the stored data URL stays small. */
+async function fileToLogoDataUrl(file: File): Promise<string> {
+  const raw = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result ?? ''));
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error('not an image'));
+    i.src = raw;
+  });
+  const MAX = 256;
+  if (img.width <= MAX && img.height <= MAX && raw.length <= 200_000) return raw;
+  const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
+  canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/png');
+}
+
+function SignInBrandingCard() {
+  const { data: settings } = useLoginSettings();
+  const update = useUpdateLoginSettings();
+  const [draft, setDraft] = useState<SignInDraft | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (settings && !draft) {
+      setDraft({
+        brandName: settings.brandName,
+        logo: settings.logo ?? '',
+        headline: settings.headline,
+        tagline: settings.tagline,
+      });
+    }
+  }, [settings]);
+
+  if (!settings || !draft) return null;
+
+  const set = <K extends keyof SignInDraft>(k: K, v: SignInDraft[K]) => setDraft((d) => d && ({ ...d, [k]: v }));
+
+  const dirty = draft.brandName !== settings.brandName
+    || draft.logo !== (settings.logo ?? '')
+    || draft.headline !== settings.headline
+    || draft.tagline !== settings.tagline;
+
+  const save = () => {
+    const patch: Record<string, string> = {};
+    if (draft.brandName !== settings.brandName) patch.brandName = draft.brandName;
+    if (draft.logo !== (settings.logo ?? '')) patch.logo = draft.logo;
+    if (draft.headline !== settings.headline) patch.headline = draft.headline;
+    if (draft.tagline !== settings.tagline) patch.tagline = draft.tagline;
+    if (Object.keys(patch).length) update.mutate(patch);
+  };
+
+  const onLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setLogoError(null);
+    fileToLogoDataUrl(file)
+      .then((dataUrl) => set('logo', dataUrl))
+      .catch(() => setLogoError('That file could not be read as an image.'));
+  };
+
+  return (
+    <div className="set-card">
+      <div className="set-card-head">
+        <div className="set-card-title">Sign-in page</div>
+        <div className="set-card-sub">The screen everyone sees before they log in — add your logo and make it yours.</div>
+      </div>
+      <div className="set-card-body">
+        <div className="set-row">
+          <div><div className="sr-label">Logo</div><div className="sr-hint">Shown top-left and above the headline. PNG or SVG with a transparent background looks best.</div></div>
+          <div className="slb-logo-controls">
+            <div className="slb-logo-preview">
+              {draft.logo ? <img src={draft.logo} alt="Sign-in logo" /> : <Icon name="zap" size={20} />}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
+                <Icon name="paperclip" size={14} /> Upload image
+                <input type="file" accept="image/*" onChange={onLogoFile} style={{ display: 'none' }} />
+              </label>
+              {draft.logo && <Button variant="ghost" size="sm" icon="x" onClick={() => set('logo', '')}>Remove</Button>}
+            </div>
+            {logoError && <div className="danger">{logoError}</div>}
+          </div>
+        </div>
+
+        <div className="set-row">
+          <div><div className="sr-label">Workspace name</div><div className="sr-hint">Appears next to the logo in the top corner.</div></div>
+          <input className="input" value={draft.brandName} onChange={(e) => set('brandName', e.target.value)} placeholder="Tessio" style={{ maxWidth: 320 }} />
+        </div>
+
+        <div className="set-row">
+          <div><div className="sr-label">Headline &amp; tagline</div><div className="sr-hint">The welcome copy on the sign-in card.</div></div>
+          <div>
+            <input className="input" value={draft.headline} onChange={(e) => set('headline', e.target.value)} placeholder="Welcome back" style={{ maxWidth: 320 }} />
+            <input className="input" value={draft.tagline} onChange={(e) => set('tagline', e.target.value)} placeholder="Sign in to your workspace to pick up where you left off." style={{ maxWidth: 320, marginTop: 8 }} />
+          </div>
+        </div>
+
+        <div className="set-row">
+          <div><div className="sr-label">Preview</div><div className="sr-hint">How the sign-in card will look.</div></div>
+          <div className="slb-preview">
+            <div className="slb-preview-topbar">
+              {draft.logo
+                ? <img className="slb-mark" src={draft.logo} alt="" />
+                : <span className="slb-mark slb-mark-default"><Icon name="zap" size={11} /></span>}
+              <span>{draft.brandName || 'Tessio'}</span>
+            </div>
+            <div className="slb-preview-card">
+              <div className="slb-badge">
+                {draft.logo ? <img src={draft.logo} alt="" /> : <Icon name="logIn" size={16} />}
+              </div>
+              <div className="slb-headline">{draft.headline || 'Welcome back'}</div>
+              <div className="slb-tagline">{draft.tagline || 'Sign in to your workspace to pick up where you left off.'}</div>
+              <div className="slb-input">Email</div>
+              <div className="slb-input">Password</div>
+              <div className="slb-btn">Sign in</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="set-card-foot">
+        <Button variant="primary" size="sm" onClick={save} disabled={!dirty || update.isPending}>
+          {update.isPending ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
+        </Button>
+      </div>
+    </div>
   );
 }
 

@@ -20,6 +20,7 @@ export * from './comments';
 export * from './views';
 export * from './forms';
 export * from './portal-settings';
+export * from './login-settings';
 export * from './attachments';
 export * from './ai-settings';
 export * from './secrets';
