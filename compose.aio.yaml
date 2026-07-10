@@ -1,14 +1,22 @@
 name: tessio-aio
 
-# The all-in-one app container + its two external datastores. Simplest Tessio:
-# one app container (api+worker+runner+web+migrations) talking to Postgres + Redis.
-# Build locally with `docker compose -f compose.aio.yaml up -d --build` until images
-# are published; then `docker compose -f compose.aio.yaml up -d` pulls
-# ghcr.io/tessio-ai/tessio-aio.
+# The all-in-one app container + its two datastores. Simplest Tessio: one app
+# container (api+worker+runner+web+migrations) talking to Postgres + Redis.
+#
+# Datastores are gated behind the "bundled" Compose profile:
+#   • Bundled (default):  set COMPOSE_PROFILES=bundled in .env — runs Postgres +
+#                         Redis containers alongside the app.
+#   • Managed/external:   leave COMPOSE_PROFILES unset and point DATABASE_URL /
+#                         REDIS_URL at your own datastores — the two containers
+#                         below stay dormant (app.depends_on is required:false).
+# The `curl … | sh` installer (install.sh) sets this up for you either way.
+#
+# Images publish to ghcr.io/tessio-ai/tessio-aio; add `--build` to build locally.
 
 services:
   postgres:
     image: pgvector/pgvector:pg16
+    profiles: ['bundled']
     restart: unless-stopped
     environment:
       POSTGRES_USER: tessio
@@ -24,6 +32,7 @@ services:
 
   redis:
     image: redis:7
+    profiles: ['bundled']
     restart: unless-stopped
     command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:-}']
     environment:
@@ -61,10 +70,14 @@ services:
     volumes:
       - tessio_aio_data:/data
     depends_on:
+      # required:false → when the "bundled" profile is off (managed datastores),
+      # these services don't exist and the app starts without them.
       postgres:
         condition: service_healthy
+        required: false
       redis:
         condition: service_healthy
+        required: false
 
 volumes:
   tessio_aio_pg:

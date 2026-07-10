@@ -6,6 +6,7 @@ COMPOSE="docker compose -f compose.aio.yaml --env-file .env.aio-smoke"
 
 cat > .env.aio-smoke <<EOF
 TESSIO_VERSION=smoke
+COMPOSE_PROFILES=bundled
 POSTGRES_PASSWORD=tessio
 SESSION_SECRET=smoke-session-secret-not-for-prod
 TESSIO_SECRET_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))")

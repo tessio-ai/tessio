@@ -1,0 +1,34 @@
+suite: external datastores (app-only)
+tests:
+  - it: api wires DATABASE_URL to the external url and drops POSTGRES_PASSWORD
+    template: templates/api-deployment.yaml
+    set:
+      postgresql.enabled: false
+      externalDatabase.url: postgres://u:p@pg.acme:5432/tessio
+      redis.enabled: false
+      externalRedis.url: redis://cache.acme:6379
+    asserts:
+      # With the bundled DB off there is no POSTGRES_PASSWORD env, so DATABASE_URL
+      # sits directly after PORT instead of being pushed down a slot.
+      - equal:
+          path: spec.template.spec.containers[0].env[1].name
+          value: DATABASE_URL
+      - equal:
+          path: spec.template.spec.containers[0].env[1].value
+          value: postgres://u:p@pg.acme:5432/tessio
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POSTGRES_PASSWORD
+          any: true
+  - it: config wires REDIS_URL to the external url
+    template: templates/configmap.yaml
+    set:
+      redis.enabled: false
+      externalRedis.url: redis://cache.acme:6379
+      postgresql.enabled: false
+      externalDatabase.url: postgres://u:p@pg.acme:5432/tessio
+    asserts:
+      - equal:
+          path: data.REDIS_URL
+          value: redis://cache.acme:6379

@@ -1,0 +1,35 @@
+# App-only overrides: run just Tessio (api + worker + runner + web + migrations)
+# and connect to a Postgres and Redis you already operate — no bundled datastores.
+#
+#   helm install tessio oci://ghcr.io/tessio-ai/charts/tessio \
+#     -f values-external.yaml \
+#     --set externalDatabase.url='postgres://user:pass@my-pg:5432/tessio' \
+#     --set externalRedis.url='redis://my-redis:6379' \
+#     --set ingress.host=tessio.example.com
+#
+# (Fill the two URLs in below instead of --set if you prefer to keep them in this file.
+# SESSION_SECRET / TESSIO_SECRET_KEY / RUNNER_TOKEN are still generated and preserved
+# across upgrades — nothing else to configure.)
+
+# Turn off the bundled pgvector Postgres and use your own. The managed Postgres
+# MUST have the `pgvector` extension available (CREATE EXTENSION vector).
+postgresql:
+  enabled: false
+externalDatabase:
+  url: '' # postgres://user:pass@host:5432/db
+
+# Turn off the bundled Redis and use your own.
+redis:
+  enabled: false
+externalRedis:
+  url: '' # redis://[:password@]host:6379
+
+# Expose the web edge. TLS terminates at the Ingress (see docs/operations/tls).
+ingress:
+  enabled: true
+  host: tessio.example.com
+
+# Optional: seed the first admin on the migrate Job's first run.
+# admin:
+#   email: admin@example.com
+#   password: change-me
