@@ -35,7 +35,14 @@ upgrades. The release exposes the `web` service through an Ingress (enabled by d
 
 See `deploy/helm/tessio/values.yaml` for the full list.
 
-## Managed datastores
+## App-only (managed datastores)
+
+To run **just the app** — `api`, `worker`, `runner`, `web`, and the migration Job — against a
+Postgres and Redis you already operate, disable the two bundled datastores and provide their
+URLs. Nothing else changes: the app secrets are still generated and preserved across upgrades.
+
+Everything you need is four values (`postgresql.enabled=false` + `externalDatabase.url`, and the
+Redis pair). As one-shot flags, no local files:
 
 ```bash
 helm install tessio oci://ghcr.io/tessio-ai/charts/tessio \
@@ -44,7 +51,19 @@ helm install tessio oci://ghcr.io/tessio-ai/charts/tessio \
   --set ingress.host=tessio.example.com
 ```
 
-The managed Postgres must have the `pgvector` extension available.
+For GitOps or to keep the config in a file, copy the ready-made
+[`values-external.yaml`](https://github.com/tessio-ai/tessio/blob/main/deploy/helm/tessio/values-external.yaml)
+(fill in the two URLs and your host) and pass it with `-f`:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/tessio-ai/tessio/main/deploy/helm/tessio/values-external.yaml
+# edit values-external.yaml, then:
+helm install tessio oci://ghcr.io/tessio-ai/charts/tessio -f values-external.yaml
+```
+
+The managed Postgres must have the `pgvector` extension available. When a datastore is disabled
+without its `external*.url`, the chart fails to render with a clear message rather than deploying
+a broken release.
 
 ## TLS
 

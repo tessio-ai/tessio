@@ -129,7 +129,9 @@ configuration, upgrade, and backup guides.
   independently.
 - **Single container (all-in-one):** one supervised container plus Postgres + Redis —
   `cp .env.aio.example .env && docker compose -f compose.aio.yaml up -d --build`.
-- **Kubernetes (Helm):** a chart in [`deploy/helm/tessio`](deploy/helm/tessio).
+- **Kubernetes (Helm):** a chart in [`deploy/helm/tessio`](deploy/helm/tessio). Bundles Postgres
+  + Redis by default, or run app-only against managed datastores with
+  [`values-external.yaml`](deploy/helm/tessio/values-external.yaml).
 
 Published multi-arch images live at `ghcr.io/tessio-ai/tessio-<service>` once a release is cut;
 until then the commands above build locally with `--build`. Full guides:
