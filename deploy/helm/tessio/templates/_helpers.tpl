@@ -75,20 +75,24 @@ app.kubernetes.io/component: {{ .component }}
 {{- printf "%s-migrate-%d" (include "tessio.fullname" .) (.Release.Revision | int) -}}
 {{- end -}}
 
-{{/* DATABASE_URL: bundled or external */}}
+{{/* DATABASE_URL: bundled or external (external url is required and must be non-empty) */}}
 {{- define "tessio.databaseUrl" -}}
 {{- if .Values.postgresql.enabled -}}
 {{- printf "postgres://%s:$(POSTGRES_PASSWORD)@%s:5432/%s" .Values.postgresql.auth.username (include "tessio.postgres.fullname" .) .Values.postgresql.auth.database -}}
+{{- else if .Values.externalDatabase.url -}}
+{{- .Values.externalDatabase.url -}}
 {{- else -}}
-{{- required "externalDatabase.url is required when postgresql.enabled=false" .Values.externalDatabase.url -}}
+{{- fail "externalDatabase.url is required when postgresql.enabled=false" -}}
 {{- end -}}
 {{- end -}}
 
-{{/* REDIS_URL: bundled or external */}}
+{{/* REDIS_URL: bundled or external (external url is required and must be non-empty) */}}
 {{- define "tessio.redisUrl" -}}
 {{- if .Values.redis.enabled -}}
 {{- printf "redis://%s:6379" (include "tessio.redis.fullname" .) -}}
+{{- else if .Values.externalRedis.url -}}
+{{- .Values.externalRedis.url -}}
 {{- else -}}
-{{- required "externalRedis.url is required when redis.enabled=false" .Values.externalRedis.url -}}
+{{- fail "externalRedis.url is required when redis.enabled=false" -}}
 {{- end -}}
 {{- end -}}
