@@ -73,8 +73,23 @@ Paid editions add features for larger organizations — gated by **feature**, ne
 
 ## 🚀 Quickstart (5 minutes)
 
-Run the whole stack — web, API, worker, runner, Postgres (pgvector), and Redis — with Docker
-Compose. Migrations and the first admin are seeded automatically on first start.
+**One line — no clone, no `.env` editing.** With Docker installed, run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tessio-ai/tessio/main/install.sh | sh
+```
+
+The installer fetches a single Compose file, generates every secret for you, and starts the
+all-in-one stack (web + API + worker + runner + migrations in one container). It asks whether to
+run **bundled Postgres + Redis containers** (default) or use your **own managed datastores** —
+pass `--external` (with `DATABASE_URL`/`REDIS_URL`) to skip the prompt. It prints the admin login
+when it finishes. Open <http://localhost> and sign in.
+
+<details>
+<summary>Prefer to clone and run Compose yourself?</summary>
+
+Run the whole multi-service stack — web, API, worker, runner, Postgres (pgvector), and Redis.
+Migrations and the first admin are seeded automatically on first start.
 
 ```bash
 git clone https://github.com/tessio-ai/tessio.git && cd tessio
@@ -92,9 +107,10 @@ cp .env.production.example .env
 docker compose up -d --build
 ```
 
-Open <http://localhost> and sign in with the `TESSIO_ADMIN_*` credentials you set. Only the web
-edge is published; the API, worker, runner, Postgres, and Redis stay on the internal Docker
-network. For automatic HTTPS, set `TESSIO_SITE_ADDRESS` to a domain that resolves to the host.
+</details>
+
+Only the web edge is published; the API, worker, runner, Postgres, and Redis stay on the internal
+Docker network. For automatic HTTPS, set `TESSIO_SITE_ADDRESS` to a domain that resolves to the host.
 
 **Turn on Tess AI:** either set the `TESSIO_AI_*` variables in `.env` (bring-your-own key — see
 `.env.production.example`) for a default provider, or configure a per-org key in
@@ -107,7 +123,9 @@ configuration, upgrade, and backup guides.
 
 ## Self-hosting
 
-- **Multi-service (recommended):** the `compose.yaml` stack above. Scales each service
+- **One-line installer (easiest):** `curl -fsSL https://raw.githubusercontent.com/tessio-ai/tessio/main/install.sh | sh` —
+  no clone; brings up the all-in-one container with bundled or managed (`--external`) datastores.
+- **Multi-service (recommended for scale):** the `compose.yaml` stack above. Scales each service
   independently.
 - **Single container (all-in-one):** one supervised container plus Postgres + Redis —
   `cp .env.aio.example .env && docker compose -f compose.aio.yaml up -d --build`.
