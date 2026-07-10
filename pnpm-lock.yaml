@@ -87,8 +87,8 @@ importers:
         specifier: 5.10.1
         version: 5.10.1
       nodemailer:
-        specifier: ^8.0.11
-        version: 8.0.11
+        specifier: ^9.0.1
+        version: 9.0.1
       openid-client:
         specifier: ^6.8.4
         version: 6.8.4
@@ -294,8 +294,8 @@ importers:
         specifier: ^3.9.9
         version: 3.9.9
       nodemailer:
-        specifier: ^8.0.11
-        version: 8.0.11
+        specifier: ^9.0.1
+        version: 9.0.1
     devDependencies:
       '@types/mailparser':
         specifier: ^3.4.6
@@ -3131,8 +3131,8 @@ packages:
     resolution: {integrity: sha512-BLFuSth7QtHOkBzyqTehWWyub0NTRDuK2Q2SQfnGLsrJnzyU+Yeh4WpV1eZGuARFj1xQJHIdnTuJZLP+b9R1GQ==}
     engines: {node: '>=6.0.0'}
 
-  nodemailer@8.0.11:
-    resolution: {integrity: sha512-nrO/pDAUKl+wXX+lx16tDLbnm0fW6sK/x8mgohaCpg+CdCEl482bD4tCuAZk2DyliruiNTIZxRCoWkDqJEnAiA==}
+  nodemailer@9.0.1:
+    resolution: {integrity: sha512-Gwv8SQewT616ZM/URn0H54b8PWo/Wum7md3EW2aWy1lO27+WZCX+Xyak3J+NlmHUjDh5ME+uesJUDRbR3Ye8Bw==}
     engines: {node: '>=6.0.0'}
 
   nwsapi@2.2.23:
@@ -3448,6 +3448,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  semver@7.8.5:
+    resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   set-cookie-parser@2.7.2:
     resolution: {integrity: sha512-oeM1lpU/UvhTxw+g3cIfxXHyJRc/uidd3yK1P242gzHds0udQBYzs3y8j4gCCW+ZJ7ad0yctld8RYO+bdurlvw==}
 
@@ -3459,8 +3464,8 @@ packages:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
 
-  shell-quote@1.8.4:
-    resolution: {integrity: sha512-VsC6n6vz1ihYYyZZwX7YZSF5l5x36ca17OC+a69h94YqB7X6XLwf+5MOgynYir2SLFUbl8gIYvBo8K8RoNQ6bQ==}
+  shell-quote@1.9.0:
+    resolution: {integrity: sha512-Iov+JwFv/2HcTpcwNMKd8+IWNb8tboQJNQTkAY/LLVK7gGH9jy+LGkVqPxfekHl+yMmiqXszdGWXgkfml7hjqA==}
     engines: {node: '>= 0.4'}
 
   siginfo@2.0.0:
@@ -5684,8 +5689,8 @@ snapshots:
       '@petamoriken/float16': 3.9.3
       debug: 4.4.3
       env-paths: 3.0.0
-      semver: 7.8.1
-      shell-quote: 1.8.4
+      semver: 7.8.5
+      shell-quote: 1.9.0
       which: 4.0.0
     transitivePeerDependencies:
       - supports-color
@@ -6101,7 +6106,7 @@ snapshots:
 
   nodemailer@8.0.10: {}
 
-  nodemailer@8.0.11: {}
+  nodemailer@9.0.1: {}
 
   nwsapi@2.2.23: {}
 
@@ -6389,6 +6394,9 @@ snapshots:
 
   semver@7.8.1: {}
 
+  semver@7.8.5:
+    optional: true
+
   set-cookie-parser@2.7.2: {}
 
   shebang-command@2.0.0:
@@ -6397,7 +6405,7 @@ snapshots:
 
   shebang-regex@3.0.0: {}
 
-  shell-quote@1.8.4:
+  shell-quote@1.9.0:
     optional: true
 
   siginfo@2.0.0: {}

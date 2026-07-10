@@ -30,7 +30,7 @@
     "fastify-type-provider-zod": "^4.0.0",
     "imapflow": "^1.4.0",
     "ioredis": "5.10.1",
-    "nodemailer": "^8.0.11",
+    "nodemailer": "^9.0.1",
     "openid-client": "^6.8.4",
     "zod": "^3.24.0"
   },
