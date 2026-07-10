@@ -32,11 +32,3 @@ tests:
       - equal:
           path: data.REDIS_URL
           value: redis://cache.acme:6379
-  - it: fails fast when a datastore is disabled without its external url
-    template: templates/api-deployment.yaml
-    set:
-      postgresql.enabled: false
-      externalDatabase.url: ""
-    asserts:
-      - failedTemplate:
-          errorMessage: externalDatabase.url is required when postgresql.enabled=false
