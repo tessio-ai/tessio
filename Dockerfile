@@ -13,19 +13,24 @@ COPY apps/runner/package.json ./apps/runner/
 COPY packages/ai/package.json ./packages/ai/
 COPY packages/db/package.json ./packages/db/
 COPY packages/forms/package.json ./packages/forms/
+# @tessio/license is bundled into apps/api by tsup, which must resolve its
+# workspace dep (@tessio/entitlements) from within it — so it has to be installed.
+COPY packages/license/package.json ./packages/license/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/ui/package.json ./packages/ui/
 RUN pnpm install --frozen-lockfile
 
 # ---------- build: compile the shipped apps ----------
-# apps/landing is the standalone marketing site (deployed separately, not part of
-# any container image), and its devDeps (vite) aren't installed here — exclude it.
+# Two workspaces are deployed separately and are NOT part of any product image,
+# so exclude them from the build (their devDeps aren't installed here either):
+#   - apps/landing            — the standalone marketing site
+#   - ee/license-server       — vendor-hosted licensing infrastructure (commercial)
 FROM base AS build
 # The web app bundles Monaco (~5MB of JS); minifying it under QEMU arm64 emulation
 # blows V8's default old-space limit (exit 137 / "heap out of memory"). Give it room.
 ENV NODE_OPTIONS=--max-old-space-size=6144
 COPY . .
-RUN pnpm exec turbo run build --filter='!@tessio/landing'
+RUN pnpm exec turbo run build --filter='!@tessio/landing' --filter='!@tessio/ee-license-server'
 
 # ---------- pruned production deploys (one per app) ----------
 FROM build AS deploy-api
