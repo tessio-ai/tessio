@@ -6,11 +6,13 @@ import { buildTestApp, resetDb, seedOrgAndSchema, createTestDb, loginAs } from '
 const db = createTestDb();
 const { app, teardown } = buildTestApp();
 
+// Both describe blocks share the pool — close it only after the whole file.
+afterAll(async () => { await db.$client.end(); await teardown(); });
+
 const PNG_DATA_URL = 'data:image/png;base64,iVBORw0KGgo=';
 
 describe('login-settings (admin)', () => {
   beforeEach(async () => { await resetDb(db); });
-  afterAll(async () => { await db.$client.end(); await teardown(); });
 
   it('GET lazily creates defaults; PATCH updates', async () => {
     const { orgId } = await seedOrgAndSchema(db, 'ticket');
