@@ -28,6 +28,8 @@ export interface LoginBranding {
   logo: string | null;
   headline: string;
   tagline: string;
+  /** The workspace theme color (Settings → Branding) — tints the sign-in sky. */
+  accent: string;
 }
 
 /** Public — no auth required; the sign-in screen calls this before any session exists. */

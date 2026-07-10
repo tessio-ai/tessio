@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent, type CSSProperties } from 'react';
 import '../console/console.css';
 import { Icon } from '../console/icons';
 import { getSsoInfo } from '../api/sso';
@@ -20,6 +20,7 @@ const DEFAULT_BRANDING: LoginBranding = {
   logo: null,
   headline: 'Welcome back',
   tagline: 'Sign in to your workspace to pick up where you left off.',
+  accent: '#4f46e5',
 };
 
 function readSsoError(): string | null {
@@ -86,7 +87,7 @@ export function LoginPage({ onLogin }: { onLogin: (email: string, password: stri
   }
 
   return (
-    <div className="login-screen">
+    <div className="login-screen" style={{ '--login-accent': branding.accent } as CSSProperties}>
       <div className="login-sky" aria-hidden="true">
         <span className="login-arc a1"></span>
         <span className="login-arc a2"></span>

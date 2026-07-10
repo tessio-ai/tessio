@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { asc, eq } from 'drizzle-orm';
-import { loginSettings, orgs } from '../schema';
+import { loginSettings, orgs, portalSettings } from '../schema';
 import type { Db } from '../client';
 
 type LoginSettingsInsert = typeof loginSettings.$inferInsert;
@@ -25,14 +25,16 @@ export function loginSettingsRepo(db: Db) {
     /**
      * Read-only lookup for the pre-auth sign-in screen. Community runs a single
      * org (slug "default"); fall back to the oldest org so a renamed slug still
-     * resolves. Never inserts — this is reachable without a session.
+     * resolves. Never inserts — this is reachable without a session. Also reads
+     * the org's theme accent (portal_settings) so the screen matches the app.
      */
     async findForDefaultOrg() {
       const [bySlug] = await db.select().from(orgs).where(eq(orgs.slug, 'default'));
       const org = bySlug ?? (await db.select().from(orgs).orderBy(asc(orgs.createdAt)).limit(1))[0];
       if (!org) return undefined;
       const rows = await db.select().from(loginSettings).where(eq(loginSettings.orgId, org.id));
-      return rows[0];
+      const accents = await db.select({ accent: portalSettings.accent }).from(portalSettings).where(eq(portalSettings.orgId, org.id));
+      return { settings: rows[0], accent: accents[0]?.accent };
     },
   };
 }

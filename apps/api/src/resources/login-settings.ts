@@ -13,6 +13,7 @@ const DEFAULTS = {
   logo: null as string | null,
   headline: 'Welcome back',
   tagline: 'Sign in to your workspace to pick up where you left off.',
+  accent: '#4f46e5', // matches the portal_settings accent column default
 };
 
 // Logos are stored inline as data: URLs; the settings UI downscales before
@@ -34,6 +35,7 @@ const brandingResponse = z.object({
   logo: z.string().nullable(),
   headline: z.string(),
   tagline: z.string(),
+  accent: z.string(),
 });
 
 /** Admin-only sign-in page branding. Caller must be guarded by requireRole('admin'). */
@@ -65,12 +67,14 @@ export function registerLoginBrandingRoute(app: FastifyInstance, db: Db): void {
   const r = app.withTypeProvider<ZodTypeProvider>();
 
   r.get('/auth/login-branding', { schema: { response: { 200: brandingResponse } } }, async () => {
-    const row = await loginSettingsRepo(db).findForDefaultOrg();
+    const found = await loginSettingsRepo(db).findForDefaultOrg();
+    const row = found?.settings;
     return {
       brandName: row?.brandName ?? DEFAULTS.brandName,
       logo: row?.logo ?? DEFAULTS.logo,
       headline: row?.headline ?? DEFAULTS.headline,
       tagline: row?.tagline ?? DEFAULTS.tagline,
+      accent: found?.accent ?? DEFAULTS.accent,
     };
   });
 }

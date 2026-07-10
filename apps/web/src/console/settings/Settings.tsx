@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { useEffect, useState, type MouseEvent } from 'react';
+import { useEffect, useState, type MouseEvent, type CSSProperties } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Icon } from '../icons';
 import { Button, IconButton } from '../ui';
@@ -279,6 +279,7 @@ async function fileToLogoDataUrl(file: File): Promise<string> {
 
 function SignInBrandingCard() {
   const { data: settings } = useLoginSettings();
+  const { data: portal } = usePortalSettings();
   const update = useUpdateLoginSettings();
   const [draft, setDraft] = useState<SignInDraft | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -361,7 +362,7 @@ function SignInBrandingCard() {
 
         <div className="set-row">
           <div><div className="sr-label">Preview</div><div className="sr-hint">How the sign-in card will look.</div></div>
-          <div className="slb-preview">
+          <div className="slb-preview" style={{ '--login-accent': portal?.accent ?? '#4f46e5' } as CSSProperties}>
             <div className="slb-preview-topbar">
               {draft.logo
                 ? <img className="slb-mark" src={draft.logo} alt="" />

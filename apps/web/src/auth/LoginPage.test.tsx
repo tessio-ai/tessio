@@ -58,6 +58,7 @@ describe('LoginPage', () => {
       logo: 'data:image/png;base64,iVBORw0KGgo=',
       headline: 'Sign in with email',
       tagline: 'Bring your words, data, and teams together.',
+      accent: '#0d9488',
     });
     const { container } = render(<LoginPage onLogin={vi.fn()} />);
     expect(await screen.findByRole('heading', { name: 'Sign in with email' })).toBeInTheDocument();

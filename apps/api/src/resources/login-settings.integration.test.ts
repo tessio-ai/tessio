@@ -59,6 +59,7 @@ describe('login branding (public)', () => {
       logo: null,
       headline: 'Welcome back',
       tagline: 'Sign in to your workspace to pick up where you left off.',
+      accent: '#4f46e5',
     });
   });
 
@@ -67,10 +68,14 @@ describe('login branding (public)', () => {
     const admin = await loginAs(app, db, { orgId, role: 'admin' });
     await app.inject({ method: 'PATCH', url: '/api/v1/login-settings', headers: { cookie: admin.cookie },
       payload: { brandName: 'Ebolt', logo: PNG_DATA_URL } });
+    // The sky tint follows the workspace theme color (portal settings accent).
+    await app.inject({ method: 'PATCH', url: '/api/v1/portal-settings', headers: { cookie: admin.cookie },
+      payload: { accent: '#0d9488' } });
 
     const res = await app.inject({ method: 'GET', url: '/api/v1/auth/login-branding' });
     expect(res.statusCode).toBe(200);
     expect(res.json().brandName).toBe('Ebolt');
     expect(res.json().logo).toBe(PNG_DATA_URL);
+    expect(res.json().accent).toBe('#0d9488');
   });
 });
