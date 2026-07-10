@@ -13,6 +13,9 @@ COPY apps/runner/package.json ./apps/runner/
 COPY packages/ai/package.json ./packages/ai/
 COPY packages/db/package.json ./packages/db/
 COPY packages/forms/package.json ./packages/forms/
+# @tessio/license is bundled into apps/api by tsup, which must resolve its
+# workspace dep (@tessio/entitlements) from within it — so it has to be installed.
+COPY packages/license/package.json ./packages/license/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/ui/package.json ./packages/ui/
 RUN pnpm install --frozen-lockfile
