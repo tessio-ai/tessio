@@ -16,6 +16,7 @@ export * from './users';
 export * from './sessions';
 export * from './forms';
 export * from './portal-settings';
+export * from './login-settings';
 export * from './teams';
 export * from './attachments';
 export * from './orgs';

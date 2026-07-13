@@ -5,6 +5,7 @@ import { listUsers, createUser, updateUser, importUsers, type UserRow, type Impo
 import { listTeams, createTeam, renameTeam, updateTeam, deleteTeam, type UpdateTeamInput } from '../../api/teams';
 import { getOrg, updateOrg } from '../../api/org';
 import { getPortalSettings, updatePortalSettings, type UpdatePortalSettingsInput } from '../../api/portal';
+import { getLoginSettings, updateLoginSettings, type UpdateLoginSettingsInput } from '../../api/login-settings';
 import { listTeamMembers, addTeamMember, removeTeamMember } from '../../api/team-members';
 import { listTeamSchemas, addTeamSchema, removeTeamSchema } from '../../api/team-schemas';
 import { getAiSettings, updateAiSettings, testAiSettings, type UpdateAiSettingsInput } from '../../api/ai';
@@ -31,6 +32,15 @@ export function useUpdatePortalSettings() {
   return useMutation({
     mutationFn: (patch: UpdatePortalSettingsInput) => updatePortalSettings(patch),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['portal-settings'] }),
+  });
+}
+
+export const useLoginSettings = () => useQuery({ queryKey: ['login-settings'], queryFn: getLoginSettings });
+export function useUpdateLoginSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: UpdateLoginSettingsInput) => updateLoginSettings(patch),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['login-settings'] }),
   });
 }
 
