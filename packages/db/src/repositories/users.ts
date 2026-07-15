@@ -3,12 +3,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { users } from '../schema';
 import type { Db } from '../client';
-import type { NotificationPrefs } from '@tessio/shared';
-
-/** Roles that occupy a billable seat — must mirror BILLABLE_ROLES in
- * @tessio/entitlements (kept inline: entitlements dev-depends on this package
- * for its type-only contract, so importing it back would create a cycle). */
-const BILLABLE_ROLES = ['admin', 'agent'] as const;
+import { BILLABLE_ROLES, type NotificationPrefs } from '@tessio/shared';
 
 type UserInsert = typeof users.$inferInsert;
 

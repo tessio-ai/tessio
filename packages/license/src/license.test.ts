@@ -74,6 +74,16 @@ describe('sign → verify round trip', () => {
     expect(() => signLicense({ edition: 'enterprise', subject: 'x', seats: 0, now: NOW }, iss.privateKey)).toThrow();
     expect(() => signLicense({ edition: 'enterprise', subject: 'x', seats: 2.5, now: NOW }, iss.privateKey)).toThrow();
   });
+
+  it('refuses a zero/negative TTL instead of silently minting a perpetual token', () => {
+    const iss = issuer();
+    expect(() => signLicense({ edition: 'enterprise', subject: 'x', ttlSeconds: 0, now: NOW }, iss.privateKey)).toThrow(/ttlSeconds/);
+    expect(() => signLicense({ edition: 'enterprise', subject: 'x', ttlSeconds: -5, now: NOW }, iss.privateKey)).toThrow(/ttlSeconds/);
+    // null stays the explicit opt-in for perpetual (offline/air-gap tokens)
+    const perpetual = signLicense({ edition: 'enterprise', subject: 'x', ttlSeconds: null, now: NOW }, iss.privateKey);
+    const res = verifyLicenseKey(perpetual, { now: NOW + 10 * 365 * 86400, publicKey: iss.publicKey });
+    expect(res.ok).toBe(true);
+  });
 });
 
 describe('resolveEffectiveEdition (fail-closed)', () => {

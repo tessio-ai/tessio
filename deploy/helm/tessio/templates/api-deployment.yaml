@@ -59,6 +59,9 @@ spec:
             - name: TESSIO_SECRET_KEY
               valueFrom:
                 secretKeyRef: { name: {{ include "tessio.secretName" . }}, key: TESSIO_SECRET_KEY }
+            - name: TESSIO_LICENSE_KEY
+              valueFrom:
+                secretKeyRef: { name: {{ include "tessio.secretName" . }}, key: TESSIO_LICENSE_KEY, optional: true }
           readinessProbe:
             httpGet: { path: /health, port: http }
             initialDelaySeconds: 5

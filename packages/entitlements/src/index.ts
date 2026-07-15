@@ -37,13 +37,9 @@ export const EDITIONS: readonly Edition[] = ['community', 'enterprise', 'cloud']
  */
 export const FREE_SEAT_LIMIT = 5;
 
-/** Roles that occupy a billable seat. Requesters are free and unlimited. */
-export const BILLABLE_ROLES = ['admin', 'agent'] as const;
-export type BillableRole = (typeof BILLABLE_ROLES)[number];
-
-export function isBillableRole(role: string): role is BillableRole {
-  return (BILLABLE_ROLES as readonly string[]).includes(role);
-}
+// Billable-role list lives in @tessio/shared (the dependency-free bottom
+// layer) so the DB count query and this policy layer share one definition.
+export { BILLABLE_ROLES, isBillableRole, type BillableRole } from '@tessio/shared';
 
 /** Gateable enterprise features. Core ITSM features are NOT listed here — they
  * are always on in every edition and are never gated. */
@@ -113,15 +109,25 @@ export function isFeatureEnabled(feature: Feature, edition: Edition = getEdition
 export type LicensedSeats = number | null | undefined;
 
 /**
+ * The one seats grammar, shared by every entry point that reads a seat count
+ * from a string (the TESSIO_LICENSED_SEATS carrier, Stripe `tessio_seats`
+ * metadata, the license CLI's --seats flag): 'unlimited' → null (site
+ * license), a positive integer → that count, anything else → undefined (no
+ * grant — fail toward the free allotment, never toward unlimited).
+ */
+export function parseSeats(raw: string | undefined | null): LicensedSeats {
+  if (raw === undefined || raw === null || raw === '') return undefined;
+  if (raw === 'unlimited') return null;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : undefined;
+}
+
+/**
  * Browser-safe read of `TESSIO_LICENSED_SEATS` — written by
  * `applyResolvedEdition` after signature verification, never set by hand.
  */
 function licensedSeatsFromEnv(): LicensedSeats {
-  const raw = typeof process !== 'undefined' ? process.env?.TESSIO_LICENSED_SEATS : undefined;
-  if (raw === undefined || raw === '') return undefined;
-  if (raw === 'unlimited') return null;
-  const n = Number(raw);
-  return Number.isInteger(n) && n > 0 ? n : undefined;
+  return parseSeats(typeof process !== 'undefined' ? process.env?.TESSIO_LICENSED_SEATS : undefined);
 }
 
 /**

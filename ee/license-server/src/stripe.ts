@@ -27,7 +27,7 @@
  */
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { EDITIONS, type Edition, type Feature, FEATURE_KEYS } from '@tessio/entitlements';
+import { EDITIONS, parseSeats, type Edition, type Feature, FEATURE_KEYS } from '@tessio/entitlements';
 import type { Subscription } from './store';
 
 /** Verify a Stripe webhook signature. Returns true iff the payload is authentic. */
@@ -104,16 +104,17 @@ export function subscriptionFromEvent(event: unknown): { token: string; subscrip
 
 /**
  * The seat total a subscription pays for: `metadata.tessio_seats` when present
- * ('unlimited' → null, i.e. a site license), otherwise the item quantity.
+ * ('unlimited' → null, i.e. a site license — parsed by the shared seats
+ * grammar), otherwise the item quantity. The item fallback applies ONLY to
+ * single-item subscriptions: with multiple items Stripe's ordering is
+ * arbitrary, so guessing an item could grant a support add-on's quantity as
+ * seats — multi-item subscriptions must set tessio_seats explicitly.
  * Anything unparseable yields undefined (free allotment only) — never unlimited.
  */
 function seatsFromSubscription(obj: StripeSubscriptionObject | undefined): number | null | undefined {
   const meta = obj?.metadata ?? {};
-  if (meta.tessio_seats !== undefined) {
-    if (meta.tessio_seats === 'unlimited') return null;
-    const n = Number(meta.tessio_seats);
-    return Number.isInteger(n) && n > 0 ? n : undefined;
-  }
-  const qty = obj?.quantity ?? obj?.items?.data?.[0]?.quantity;
+  if (meta.tessio_seats !== undefined) return parseSeats(meta.tessio_seats);
+  const items = obj?.items?.data;
+  const qty = obj?.quantity ?? (items && items.length === 1 ? items[0].quantity : undefined);
   return typeof qty === 'number' && Number.isInteger(qty) && qty > 0 ? qty : undefined;
 }

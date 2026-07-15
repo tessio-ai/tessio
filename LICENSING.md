@@ -36,8 +36,14 @@ Tessio is priced on **billable seats** — active users with the `admin` or `age
 Enforcement is central and server-side: the seat limit is computed by
 `@tessio/entitlements` (`getSeatLimit`) from the **verified** license, and every API path
 that can activate an admin/agent (create, bulk import, role promotion, re-activation)
-checks it and answers `402 Payment Required` when the limit is reached. Core *features*
-are never gated on seats.
+performs the write atomically under the seat guard and answers `402 Payment Required`
+when the limit is reached. Core *features* are never gated on seats.
+
+Seats apply **per workspace (org)**. Self-hosted installs run a single workspace, so in
+practice the grant is per instance; the hosted Cloud edition subscribes each workspace
+separately. A paid license that carries no explicit seat grant keeps only the free
+allotment (fail toward free, never toward unlimited) — feature-only or site-license
+deals should set `seats` explicitly (`--seats unlimited` for a true site license).
 
 ## The import boundary (one-directional, enforced)
 

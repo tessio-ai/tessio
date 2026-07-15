@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { pgTable, pgEnum, uuid, text, timestamp, unique, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, text, timestamp, unique, jsonb, index } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import type { NotificationPrefs } from '@tessio/shared';
 import { orgs } from './orgs';
 
@@ -25,5 +26,14 @@ export const users = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [unique('users_org_email_key').on(t.orgId, t.email)],
+  (t) => [
+    unique('users_org_email_key').on(t.orgId, t.email),
+    // Billable-seat counting (usersRepo.countBillable) runs on every user
+    // create/promotion and on /me/entitlements; the partial index keeps it an
+    // index-only scan over the handful of billable rows instead of a full
+    // org scan across unlimited requesters.
+    index('users_org_billable_idx')
+      .on(t.orgId)
+      .where(sql`${t.status} = 'active' and ${t.role} in ('admin', 'agent')`),
+  ],
 );

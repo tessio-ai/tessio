@@ -10,6 +10,7 @@ import { listSchemas } from '../../api/schemas';
 import { listTeamMembers } from '../../api/team-members';
 import type { ImportUserInput, ImportUsersResult } from '../../api/users';
 import { ApiError } from '../../api/types';
+import { FREE_SEAT_LIMIT } from '@tessio/entitlements';
 import {
   useOrg, useUpdateOrg,
   usePortalSettings, useUpdatePortalSettings,
@@ -396,8 +397,8 @@ function SignInBrandingCard() {
 
 /** Human-readable message for a failed member mutation; seat-limit 402s carry a full explanation. */
 function memberErrorText(err: unknown): string {
-  if (err instanceof ApiError) return err.detail ?? err.title;
-  return 'Something went wrong — please try again.';
+  // ApiError's message is already `detail ?? title` (see api/types.ts).
+  return err instanceof ApiError ? err.message : 'Something went wrong — please try again.';
 }
 
 function MembersSettings() {
@@ -960,7 +961,7 @@ function BillingSettings() {
           <div style={{ color: 'var(--muted-foreground)', fontSize: 'var(--t-small)', maxWidth: 460, margin: '0 auto', lineHeight: 1.55 }}>
             Tessio is <strong>open core</strong>. The self-hostable core product is free and open source under the{' '}
             <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noreferrer">GNU AGPL-3.0</a>,
-            and is <strong>free for up to {seatLimit != null && !isPaid ? seatLimit : 5} admins and agents</strong>.
+            and is <strong>free for up to {FREE_SEAT_LIMIT} admins and agents</strong>.
             Requesters are always free and unlimited.
             {isPaid ? (
               <> This instance runs under a commercial per-seat license, which also enables enterprise features (SSO, audit log).</>

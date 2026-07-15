@@ -19,3 +19,4 @@ export * from './csat';
 export * from './sso';
 export * from './audit';
 export * from './agent';
+export * from './roles';

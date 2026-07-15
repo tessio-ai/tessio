@@ -42,8 +42,10 @@ This is the most important rule in the repo:
   is the composition root, via a guarded dynamic import.
 - Gate enterprise features on **entitlements** (`@tessio/entitlements` / `isFeatureEnabled`).
   Seat limits are enforced ONLY through the central seat-limit layer
-  (`getSeatLimit` / `assertSeatsAvailable`) — never hand-roll a seat check, and never gate
-  a core *feature* on seats. Requesters are always free and unlimited.
+  (`getSeatLimit` / `withSeatGuard`) — never hand-roll a seat check, and never gate
+  a core *feature* on seats. Any write that occupies a new admin/agent seat must run
+  *inside* `withSeatGuard` (it is transactional for a reason). Requesters are always
+  free and unlimited.
 
 See [LICENSING.md](LICENSING.md) for the full model.
 

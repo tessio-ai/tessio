@@ -8,6 +8,7 @@ import {
   getEntitlements,
   getSeatLimit,
   isBillableRole,
+  parseSeats,
   FEATURE_KEYS,
   FREE_SEAT_LIMIT,
 } from './index';
@@ -84,6 +85,14 @@ describe('seat limits', () => {
     expect(isBillableRole('admin')).toBe(true);
     expect(isBillableRole('agent')).toBe(true);
     expect(isBillableRole('requester')).toBe(false);
+  });
+
+  it('parseSeats: the one seats grammar — never falls toward unlimited', () => {
+    expect(parseSeats('25')).toBe(25);
+    expect(parseSeats('unlimited')).toBeNull();
+    for (const bad of [undefined, null, '', '0', '-3', '2.5', 'lots', 'Infinity', 'NaN']) {
+      expect(parseSeats(bad)).toBeUndefined();
+    }
   });
 });
 

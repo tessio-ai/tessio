@@ -148,6 +148,25 @@ describe('seat-limit enforcement (community free tier)', () => {
     expect(swap.statusCode).toBe(200);
   });
 
+  it('holds the limit under concurrency: parallel creates for the last seat → exactly one wins', async () => {
+    const { orgId } = await seedOrgAndSchema(db, 'ticket');
+    const admin = await loginAs(app, db, { orgId, role: 'admin' });
+    await fillSeats(orgId, 2); // admin + 3 agents = 4 of 5 seats
+
+    // Three simultaneous invites race for the single free seat; the advisory
+    // lock inside withSeatGuard must serialize them.
+    const results = await Promise.all(
+      Array.from({ length: 3 }, () =>
+        app.inject({ method: 'POST', url: '/api/v1/users', headers: { cookie: admin.cookie }, payload: newUser('agent') }),
+      ),
+    );
+    const codes = results.map((r) => r.statusCode).sort();
+    expect(codes).toEqual([201, 402, 402]);
+
+    const ent = await app.inject({ method: 'GET', url: '/api/v1/me/entitlements', headers: { cookie: admin.cookie } });
+    expect(ent.json().seatsUsed).toBe(FREE_SEAT_LIMIT); // never over the cap
+  });
+
   it('/me/entitlements reflects live seat usage', async () => {
     const { orgId } = await seedOrgAndSchema(db, 'ticket');
     const admin = await loginAs(app, db, { orgId, role: 'admin' });

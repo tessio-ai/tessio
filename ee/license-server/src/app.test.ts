@@ -123,6 +123,16 @@ describe('stripe helpers (unit)', () => {
     expect(viaItems?.subscription.seats).toBe(8);
   });
 
+  it('subscriptionFromEvent never guesses seats from a multi-item subscription', () => {
+    // Two items (e.g. a support add-on listed first): item order is arbitrary,
+    // so no seat grant is inferred — tessio_seats metadata must be explicit.
+    const meta = { tessio_license_token: 'tok_multi', tessio_edition: 'enterprise' };
+    const multi = subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', items: { data: [{ quantity: 1 }, { quantity: 50 }] }, metadata: meta } } });
+    expect(multi?.subscription.seats).toBeUndefined();
+    const withMeta = subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', items: { data: [{ quantity: 1 }, { quantity: 50 }] }, metadata: { ...meta, tessio_seats: '50' } } } });
+    expect(withMeta?.subscription.seats).toBe(50);
+  });
+
   it('subscriptionFromEvent lets tessio_seats metadata override quantity, incl. unlimited', () => {
     const base = { tessio_license_token: 'tok_m', tessio_edition: 'enterprise' };
     const overridden = subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', quantity: 12, metadata: { ...base, tessio_seats: '40' } } } });

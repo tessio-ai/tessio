@@ -17,7 +17,7 @@
 
 import { generateKeypair } from './keys';
 import { signLicense } from './sign';
-import type { Edition, Feature } from '@tessio/entitlements';
+import { parseSeats, type Edition, type Feature } from '@tessio/entitlements';
 
 function keygen(): void {
   const { publicKey, privateKey } = generateKeypair();
@@ -38,13 +38,17 @@ function parseFlags(argv: string[]): Record<string, string> {
 function issue(flags: Record<string, string>, now: number): string {
   const priv = process.env.TESSIO_LICENSE_PRIVATE_KEY;
   if (!priv) throw new Error('set TESSIO_LICENSE_PRIVATE_KEY (from `keygen`) to sign a license');
+  const seats = parseSeats(flags.seats);
+  if (flags.seats !== undefined && seats === undefined) {
+    throw new Error(`--seats must be a positive integer or 'unlimited', got '${flags.seats}'`);
+  }
   return signLicense(
     {
       edition: flags.edition as Edition,
       subject: flags.sub ?? 'unknown',
       licenseId: flags.lid,
       features: flags.features ? (flags.features.split(',').map((f) => f.trim()).filter(Boolean) as Feature[]) : undefined,
-      seats: flags.seats === undefined ? undefined : flags.seats === 'unlimited' ? null : Number(flags.seats),
+      seats,
       ttlSeconds: flags.days ? Number(flags.days) * 86400 : null,
       now,
     },

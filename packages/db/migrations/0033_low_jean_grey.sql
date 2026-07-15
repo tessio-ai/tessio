@@ -1,0 +1,1 @@
+CREATE INDEX "users_org_billable_idx" ON "users" USING btree ("org_id") WHERE "users"."status" = 'active' and "users"."role" in ('admin', 'agent');

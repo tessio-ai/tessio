@@ -67,6 +67,12 @@ services:
       PORT: '3000'
       HOST: 0.0.0.0
       TESSIO_STORAGE_DIR: /data/storage
+      # Edition + license (paid editions only; community needs none of these).
+      # The license cache lands under TESSIO_STORAGE_DIR, which is a volume, so
+      # the offline-grace token survives container restarts.
+      TESSIO_EDITION: ${TESSIO_EDITION:-community}
+      TESSIO_LICENSE_KEY: ${TESSIO_LICENSE_KEY:-}
+      TESSIO_LICENSE_SERVER_URL: ${TESSIO_LICENSE_SERVER_URL:-}
     depends_on:
       postgres:
         condition: service_healthy
