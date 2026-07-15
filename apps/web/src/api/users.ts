@@ -26,3 +26,7 @@ export interface ImportUsersResult {
 }
 export const importUsers = (users: ImportUserInput[]) =>
   request<ImportUsersResult>('/users/import', { method: 'POST', body: JSON.stringify({ users }) });
+
+/** Admin-initiated reset: returns the generated password exactly once. */
+export const resetUserPassword = (id: string) =>
+  request<{ password: string }>(`/users/${id}/reset-password`, { method: 'POST', body: JSON.stringify({}) });

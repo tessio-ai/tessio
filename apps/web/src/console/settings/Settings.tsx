@@ -8,7 +8,7 @@ import { useAuth } from '../../auth/AuthContext';
 import type { Route } from '../shell';
 import { listSchemas } from '../../api/schemas';
 import { listTeamMembers } from '../../api/team-members';
-import type { ImportUserInput, ImportUsersResult } from '../../api/users';
+import { resetUserPassword, type ImportUserInput, type ImportUsersResult } from '../../api/users';
 import { ApiError } from '../../api/types';
 import { FREE_SEAT_LIMIT } from '@tessio/entitlements';
 import {
@@ -412,6 +412,7 @@ function MembersSettings() {
   const [q, setQ] = useState('');
   const [inviting, setInviting] = useState(false);
   const [importingUsers, setImportingUsers] = useState(false);
+  const [resettingUser, setResettingUser] = useState<{ id: string; name: string; email: string } | null>(null);
 
   const seatLimit = ent?.seatLimit;
   const seatsUsed = ent?.seatsUsed;
@@ -512,10 +513,14 @@ function MembersSettings() {
                 </span>
               </div>
               <div className="mem-last">{new Date(u.createdAt).toLocaleDateString()}</div>
-              <div>
+              <div style={{ display: 'flex', gap: 2 }}>
                 {!isMe && (
-                  <IconButton name={u.status === 'active' ? 'lock' : 'check'} title="Toggle status"
-                    onClick={() => updateUserMut.mutate({ id: u.id, status: u.status === 'active' ? 'disabled' : 'active' })} />
+                  <>
+                    <IconButton name="refresh" title="Reset password"
+                      onClick={() => setResettingUser({ id: u.id, name: u.name, email: u.email })} />
+                    <IconButton name={u.status === 'active' ? 'lock' : 'check'} title="Toggle status"
+                      onClick={() => updateUserMut.mutate({ id: u.id, status: u.status === 'active' ? 'disabled' : 'active' })} />
+                  </>
                 )}
               </div>
             </div>
@@ -533,6 +538,76 @@ function MembersSettings() {
         }} />}
 
       {importingUsers && <ImportUsersDialog onClose={() => setImportingUsers(false)} />}
+
+      {resettingUser && <ResetPasswordDialog user={resettingUser} onClose={() => setResettingUser(null)} />}
+    </>
+  );
+}
+
+/** Admin resets a member's password; the generated password is shown exactly once. */
+function ResetPasswordDialog({ user, onClose }: { user: { id: string; name: string; email: string }; onClose: () => void }) {
+  const [password, setPassword] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const doReset = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await resetUserPassword(user.id);
+      setPassword(r.password);
+    } catch (err) {
+      setError(memberErrorText(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const copy = () => {
+    void navigator.clipboard?.writeText(password ?? '');
+    setCopied(true);
+  };
+
+  return (
+    <>
+      <div className="scrim" style={{ zIndex: 60 }} onClick={onClose} />
+      <div className="dialog" role="dialog" aria-label="Reset password">
+        <div className="dialog-head">
+          <div className="dialog-title">Reset password</div>
+          <IconButton name="x" onClick={onClose} />
+        </div>
+        <div className="dialog-body">
+          {!password ? (
+            <>
+              <div style={{ fontSize: 'var(--t-small)', lineHeight: 1.5 }}>
+                Generate a new password for <strong>{user.name}</strong> ({user.email})?
+                Their current password stops working and they are signed out everywhere.
+              </div>
+              {error && <div style={{ marginTop: 10, fontSize: 'var(--t-caption)', color: 'var(--danger)' }}>{error}</div>}
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 'var(--t-caption)', color: 'var(--muted-foreground)', marginBottom: 8 }}>
+                Share this password with {user.name} now — it is shown only once.
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <code style={{ flex: 1, padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', fontFamily: 'var(--font-mono, monospace)', fontSize: 'var(--t-small)', userSelect: 'all' }}>{password}</code>
+                <Button variant="outline" size="sm" icon={copied ? 'checkCheck' : 'copy'} onClick={copy}>{copied ? 'Copied' : 'Copy'}</Button>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="dialog-foot">
+          {!password ? (
+            <>
+              <Button variant="ghost" onClick={onClose}>Cancel</Button>
+              <Button variant="primary" icon="refresh" onClick={doReset} disabled={busy}>{busy ? 'Resetting…' : 'Reset password'}</Button>
+            </>
+          ) : (
+            <Button variant="primary" onClick={onClose}>Done</Button>
+          )}
+        </div>
+      </div>
     </>
   );
 }

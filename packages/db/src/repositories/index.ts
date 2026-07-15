@@ -39,3 +39,4 @@ export { csatResponsesRepo } from './csat-responses';
 export { ssoSettingsRepo } from './sso-settings';
 export { auditRepo } from './audit';
 export { agentEnrollmentKeysRepo, agentDevicesRepo, agentSoftwareRepo } from './agents';
+export { passwordResetsRepo } from './password-resets';

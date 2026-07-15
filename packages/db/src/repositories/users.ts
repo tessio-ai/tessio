@@ -51,6 +51,10 @@ export function usersRepo(db: Db) {
       const rows = await db.update(users).set({ status, updatedAt: new Date() }).where(eq(users.id, id)).returning();
       return rows[0];
     },
+    async setPasswordHash(id: string, passwordHash: string) {
+      const rows = await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, id)).returning();
+      return rows[0];
+    },
     async setRole(id: string, role: 'admin' | 'agent' | 'requester') {
       const rows = await db.update(users).set({ role, updatedAt: new Date() }).where(eq(users.id, id)).returning();
       return rows[0];

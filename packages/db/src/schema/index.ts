@@ -40,3 +40,4 @@ export * from './audit-log';
 export * from './agent-enrollment-keys';
 export * from './agent-devices';
 export * from './agent-software';
+export * from './password-reset-tokens';

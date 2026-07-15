@@ -31,6 +31,9 @@ admin:
 
 config:
   siteAddress: ":80"   # Caddy serves HTTP in-cluster; TLS terminates at the Ingress
+  # Public URL users reach the workspace at (your Ingress host). Used in links
+  # inside generated emails (ticket notifications, password resets).
+  siteUrl: "http://localhost"
 
 # Edition + license (paid editions only; community needs none of these).
 # The license key is stored in the chart-managed Secret; the seat count you
