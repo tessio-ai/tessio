@@ -35,6 +35,12 @@ export const CANONICAL_PUBLIC_KEY_B64URL = 'Zm4xy0t0X1nvYu9dxPtsEBPwy3E2ofXWzgPQ
 export interface LicenseClaims {
   edition: Edition;
   features?: Feature[];
+  /**
+   * Total billable seats granted (including the free allotment). `null` =
+   * unlimited (site license). `undefined` = the token carries no seat grant,
+   * so the instance keeps only the free allotment.
+   */
+  seats?: number | null;
   subject: string;
   licenseId: string;
   issuedAt: number;
@@ -49,6 +55,7 @@ interface RawPayload {
   v?: unknown;
   edition?: unknown;
   features?: unknown;
+  seats?: unknown;
   sub?: unknown;
   lid?: unknown;
   iat?: unknown;
@@ -108,11 +115,21 @@ export function verifyLicenseKey(
     ? raw.features.filter((f): f is Feature => FEATURE_KEYS.includes(f as Feature))
     : undefined;
 
+  // 4) Seats: absent → no grant; null → unlimited; otherwise must be a positive
+  //    integer. A malformed seats claim rejects the whole token (fail closed)
+  //    rather than silently granting some other amount.
+  let seats: number | null | undefined;
+  if (raw.seats === undefined) seats = undefined;
+  else if (raw.seats === null) seats = null;
+  else if (typeof raw.seats === 'number' && Number.isInteger(raw.seats) && raw.seats > 0) seats = raw.seats;
+  else return { ok: false, reason: 'license seats claim is invalid' };
+
   return {
     ok: true,
     claims: {
       edition,
       features,
+      seats,
       subject: typeof raw.sub === 'string' ? raw.sub : 'unknown',
       licenseId: typeof raw.lid === 'string' ? raw.lid : 'unknown',
       issuedAt: Number.isFinite(Number(raw.iat)) ? Number(raw.iat) : 0,

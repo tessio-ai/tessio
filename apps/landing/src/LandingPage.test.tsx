@@ -14,7 +14,8 @@ const BANNED = [
   /\blog in\b/i,
   /open the app/i,
   /\bcloud\b/i,
-  /open[ -]source/i, // proprietary (Elastic License 2.0), not OSI open-source
+  // "open source" is fine now: the core relicensed from Elastic License 2.0 to
+  // AGPL-3.0-only (OSI open source) — see CHANGELOG.md / LICENSING.md.
 ];
 
 describe('LandingPage (community)', () => {

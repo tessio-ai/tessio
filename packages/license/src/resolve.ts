@@ -58,9 +58,19 @@ export function resolveEffectiveEdition(input: ResolveInput): ResolvedEdition {
   return { edition: result.claims.edition, license: result.claims, downgraded: false, reason: null };
 }
 
-/** Apply a resolved edition to the environment so the rest of the process sees it. */
+/**
+ * Apply a resolved edition to the environment so the rest of the process sees
+ * it. `TESSIO_LICENSED_SEATS` is written (or cleared) here and ONLY here —
+ * always after verification — so a hand-set value never survives boot. The
+ * entitlements package turns it into the effective seat limit (community and
+ * seat-less paid tokens stay at the free allotment).
+ */
 export function applyResolvedEdition(input: ResolveInput, env: NodeJS.ProcessEnv = process.env): ResolvedEdition {
   const resolved = resolveEffectiveEdition(input);
   env.TESSIO_EDITION = resolved.edition;
+  const seats = resolved.license?.seats;
+  if (seats === null) env.TESSIO_LICENSED_SEATS = 'unlimited';
+  else if (typeof seats === 'number') env.TESSIO_LICENSED_SEATS = String(seats);
+  else delete env.TESSIO_LICENSED_SEATS;
   return resolved;
 }

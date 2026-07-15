@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { users } from '../schema';
 import type { Db } from '../client';
 import type { NotificationPrefs } from '@tessio/shared';
+
+/** Roles that occupy a billable seat — must mirror BILLABLE_ROLES in
+ * @tessio/entitlements (kept inline: entitlements dev-depends on this package
+ * for its type-only contract, so importing it back would create a cycle). */
+const BILLABLE_ROLES = ['admin', 'agent'] as const;
 
 type UserInsert = typeof users.$inferInsert;
 
@@ -38,6 +43,14 @@ export function usersRepo(db: Db) {
     },
     async list(orgId: string) {
       return db.select().from(users).where(eq(users.orgId, orgId));
+    },
+    /** Active billable seats in use: admins + agents (requesters are free). */
+    async countBillable(orgId: string) {
+      const rows = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(users)
+        .where(and(eq(users.orgId, orgId), eq(users.status, 'active'), inArray(users.role, [...BILLABLE_ROLES])));
+      return rows[0]?.count ?? 0;
     },
     async setStatus(id: string, status: 'active' | 'disabled') {
       const rows = await db.update(users).set({ status, updatedAt: new Date() }).where(eq(users.id, id)).returning();

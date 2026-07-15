@@ -20,6 +20,12 @@ export interface Subscription {
   edition: Edition;
   /** Optional feature subset; when absent the edition's full set applies. */
   features?: Feature[];
+  /**
+   * Total billable seats (active admins + agents) the subscription pays for,
+   * INCLUDING the free allotment. Mirrors the Stripe subscription quantity.
+   * `null` = unlimited (site license); absent = free allotment only.
+   */
+  seats?: number | null;
   /** Who the license is for (company/org), surfaced in the signed token + UI. */
   subject: string;
   /** Opaque license id for support/ledger correlation. */

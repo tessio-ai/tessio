@@ -9,7 +9,7 @@
  *
  *   # mint a long-lived OFFLINE token for an air-gapped customer
  *   TESSIO_LICENSE_PRIVATE_KEY=<b64url> \
- *   tsx src/cli.ts issue --edition enterprise --sub "Acme Corp" --days 365
+ *   tsx src/cli.ts issue --edition enterprise --sub "Acme Corp" --days 365 --seats 25
  *
  * The hosted path does NOT use `issue` — the license server mints short-TTL
  * tokens automatically on check-in. `issue` exists only for air-gapped deals.
@@ -44,6 +44,7 @@ function issue(flags: Record<string, string>, now: number): string {
       subject: flags.sub ?? 'unknown',
       licenseId: flags.lid,
       features: flags.features ? (flags.features.split(',').map((f) => f.trim()).filter(Boolean) as Feature[]) : undefined,
+      seats: flags.seats === undefined ? undefined : flags.seats === 'unlimited' ? null : Number(flags.seats),
       ttlSeconds: flags.days ? Number(flags.days) * 86400 : null,
       now,
     },
@@ -58,7 +59,7 @@ function main(): void {
     process.stdout.write(`${issue(parseFlags(rest), Math.floor(Date.now() / 1000))}\n`);
     return;
   }
-  process.stderr.write('usage: cli.ts <keygen | issue --edition <e> --sub <name> [--lid id] [--days n] [--features a,b]>\n');
+  process.stderr.write('usage: cli.ts <keygen | issue --edition <e> --sub <name> [--lid id] [--days n] [--features a,b] [--seats <n|unlimited>]>\n');
   process.exit(1);
 }
 

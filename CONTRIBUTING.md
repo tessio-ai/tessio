@@ -40,8 +40,10 @@ This is the most important rule in the repo:
   import core, never the reverse.
 - It is enforced by ESLint (`pnpm lint` fails on a violation). The only place that loads `ee/`
   is the composition root, via a guarded dynamic import.
-- Gate enterprise features on **entitlements** (`@tessio/entitlements` / `isFeatureEnabled`),
-  **never on seat count**. Self-host always ships unlimited agents.
+- Gate enterprise features on **entitlements** (`@tessio/entitlements` / `isFeatureEnabled`).
+  Seat limits are enforced ONLY through the central seat-limit layer
+  (`getSeatLimit` / `assertSeatsAvailable`) — never hand-roll a seat check, and never gate
+  a core *feature* on seats. Requesters are always free and unlimited.
 
 See [LICENSING.md](LICENSING.md) for the full model.
 
@@ -63,7 +65,8 @@ Checklist:
 - [ ] `lint`, `typecheck`, `test`, `build` all pass.
 - [ ] No secrets, API keys, or real `.env` files committed.
 - [ ] Core does not import from `ee/`.
-- [ ] New enterprise features are gated by edition, not seats.
+- [ ] New enterprise features are gated by edition; any new path that activates an
+      admin/agent goes through the seat-limit check.
 - [ ] Docs / `CHANGELOG.md` updated when behavior changes.
 - [ ] New source files carry the right SPDX header
       (`AGPL-3.0-only` in core; `LicenseRef-Tessio-Commercial` in `ee/`).

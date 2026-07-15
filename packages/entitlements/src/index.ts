@@ -3,19 +3,25 @@
 /**
  * Central entitlements / feature-flag layer for Tessio's open-core model.
  *
- * This is the single source of truth for "which features are enabled" based on
- * the active edition. It is core (AGPL) code: it knows the *names* of the paid
- * features so the Community build can keep them switched off, but it contains
- * none of their implementation — that lives in `ee/`.
+ * This is the single source of truth for "which features are enabled" and "how
+ * many billable seats this instance may use", based on the active edition. It is
+ * core (AGPL) code: it knows the *names* of the paid features so the Community
+ * build can keep them switched off, but it contains none of their implementation
+ * — that lives in `ee/`.
  *
  * Invariants:
- *   - Gate on FEATURES, never on seat/agent count. Every edition ships with
- *     unlimited agents (`maxAgents: null`). There is deliberately no seat cap
- *     anywhere in this layer.
+ *   - Every edition includes FREE_SEAT_LIMIT billable seats (admins + agents)
+ *     for free. A paid license raises the limit to the purchased seat count
+ *     (or removes it for site licenses). Requesters are never billable and are
+ *     always unlimited.
  *   - The Community edition enables NO enterprise features.
  *   - "reserved" features are planned but not implemented yet; they report
  *     disabled in every edition until their implementation lands and they are
  *     flipped to "available".
+ *   - Licensed seat counts are only trusted after boot-time verification of a
+ *     signed license token (see @tessio/license). `TESSIO_LICENSED_SEATS` is
+ *     written by `applyResolvedEdition` AFTER verification, exactly like
+ *     `TESSIO_EDITION` — a hand-set value is overwritten before anything reads it.
  */
 
 export type { AuditEntry, EnterpriseContext, EnterprisePlugin } from './contract';
@@ -23,6 +29,21 @@ export type { AuditEntry, EnterpriseContext, EnterprisePlugin } from './contract
 export type Edition = 'community' | 'enterprise' | 'cloud';
 
 export const EDITIONS: readonly Edition[] = ['community', 'enterprise', 'cloud'];
+
+/**
+ * Billable seats included free in every edition. Beyond this, adding an active
+ * admin or agent requires a paid per-seat subscription (a signed license whose
+ * `seats` claim covers the new total).
+ */
+export const FREE_SEAT_LIMIT = 5;
+
+/** Roles that occupy a billable seat. Requesters are free and unlimited. */
+export const BILLABLE_ROLES = ['admin', 'agent'] as const;
+export type BillableRole = (typeof BILLABLE_ROLES)[number];
+
+export function isBillableRole(role: string): role is BillableRole {
+  return (BILLABLE_ROLES as readonly string[]).includes(role);
+}
 
 /** Gateable enterprise features. Core ITSM features are NOT listed here — they
  * are always on in every edition and are never gated. */
@@ -83,18 +104,61 @@ export function isFeatureEnabled(feature: Feature, edition: Edition = getEdition
   return spec.status === 'available' && spec.editions.includes(edition);
 }
 
+/**
+ * Licensed seats granted by a verified license token:
+ *   number      — the purchased seat total,
+ *   null        — unlimited (site license),
+ *   undefined   — no seat grant present.
+ */
+export type LicensedSeats = number | null | undefined;
+
+/**
+ * Browser-safe read of `TESSIO_LICENSED_SEATS` — written by
+ * `applyResolvedEdition` after signature verification, never set by hand.
+ */
+function licensedSeatsFromEnv(): LicensedSeats {
+  const raw = typeof process !== 'undefined' ? process.env?.TESSIO_LICENSED_SEATS : undefined;
+  if (raw === undefined || raw === '') return undefined;
+  if (raw === 'unlimited') return null;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : undefined;
+}
+
+/**
+ * The billable-seat limit for an edition. Community always gets exactly the
+ * free allotment; a paid edition gets whatever its verified license grants
+ * (falling back to the free allotment if a paid token somehow carries no seat
+ * grant — fail toward the free tier, never toward unlimited).
+ */
+export function getSeatLimit(
+  edition: Edition = getEdition(),
+  licensedSeats: LicensedSeats = licensedSeatsFromEnv(),
+): number | null {
+  if (edition === 'community') return FREE_SEAT_LIMIT;
+  if (licensedSeats === null) return null; // explicit unlimited / site license
+  if (typeof licensedSeats === 'number') return Math.max(licensedSeats, FREE_SEAT_LIMIT);
+  return FREE_SEAT_LIMIT;
+}
+
 export interface Entitlements {
   edition: Edition;
   /** Per-feature enabled map. */
   features: Record<Feature, boolean>;
-  /** Maximum agents/seats. `null` means unlimited — Tessio never caps seats. */
-  maxAgents: number | null;
+  /**
+   * Maximum active billable seats (admins + agents). `null` = unlimited (site
+   * license). Every edition includes FREE_SEAT_LIMIT seats free; a paid
+   * per-seat license raises this. Requesters are never counted.
+   */
+  seatLimit: number | null;
 }
 
 /** A full entitlements snapshot for the given (or active) edition. */
-export function getEntitlements(edition: Edition = getEdition()): Entitlements {
+export function getEntitlements(
+  edition: Edition = getEdition(),
+  licensedSeats: LicensedSeats = licensedSeatsFromEnv(),
+): Entitlements {
   const features = Object.fromEntries(
     FEATURE_KEYS.map((f) => [f, isFeatureEnabled(f, edition)]),
   ) as Record<Feature, boolean>;
-  return { edition, features, maxAgents: null };
+  return { edition, features, seatLimit: getSeatLimit(edition, licensedSeats) };
 }

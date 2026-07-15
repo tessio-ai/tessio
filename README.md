@@ -30,8 +30,9 @@ brandable end-user portal.
 - 🤖 **Bring your own LLM.** Point Tess at OpenAI or any OpenAI-compatible endpoint (Azure
   OpenAI, Ollama, LM Studio, vLLM, a local gateway) — run a fully local model with **zero
   outbound egress**. PII is redacted at the model boundary, always.
-- 🆓 **Free for teams, no seat cap.** The Community edition is the full core product with
-  **unlimited agents**. We never gate on seat count — only on enterprise features.
+- 🆓 **Free for small teams.** The full core product is free for up to **5 admins/agents**,
+  with **unlimited requesters** (end users). Beyond that it's a simple per-user monthly
+  subscription — no feature paywall tricks on the core product.
 - ⚡ **Fast and calm.** A dense, keyboard-first console in the spirit of Linear — not a 2009-era
   enterprise portal.
 
@@ -53,12 +54,14 @@ brandable end-user portal.
 ## Editions
 
 Tessio is **open core**. The Community edition is free, self-hosted, AGPL-licensed, and complete.
-Paid editions add features for larger organizations — gated by **feature**, never by seat count.
+It includes **5 free admin/agent seats**; a paid per-user subscription adds seats beyond that
+and unlocks the enterprise feature set. **Requesters (end users) are always free and unlimited.**
 
 | | **Community** (free, self-host) | **Enterprise** (self-host) | **Cloud** (hosted) |
 | --- | :---: | :---: | :---: |
 | Full core ITSM (everything in [Features](#features)) | ✅ | ✅ | ✅ |
-| **Unlimited agents — no seat cap** | ✅ | ✅ | ✅ |
+| Admin/agent seats | **5 free** | per-user/month | per-user/month |
+| Requesters (end users) | unlimited | unlimited | unlimited |
 | Bring-your-own LLM key (no AI egress) | ✅ | ✅ | — *(metered)* |
 | SSO / OIDC | — | ✅ | ✅ |
 | Audit log viewer | — | ✅ | ✅ |
@@ -66,10 +69,12 @@ Paid editions add features for larger organizations — gated by **feature**, ne
 | Managed hosting, upgrades & metered AI credits | — | — | ✅ |
 
 > The edition is selected with the `TESSIO_EDITION` environment variable (`community` by
-> default). Enterprise features live in the commercial [`ee/`](ee/) directory and are excluded
-> from Community builds. 🔜 = reserved for an upcoming release.
+> default) plus a signed license key (`TESSIO_LICENSE_KEY`) for paid editions — the seat
+> count you've purchased is carried inside the cryptographically signed license, so it can't
+> be unlocked by editing an env var. Enterprise features live in the commercial [`ee/`](ee/)
+> directory and are excluded from Community builds. 🔜 = reserved for an upcoming release.
 >
-> <!-- PRODUCT: the exact free-vs-paid feature split is a pricing decision — confirm before launch. -->
+> <!-- PRODUCT: the per-user monthly price is set in Stripe (graduated tiers: first 5 seats $0) — confirm the number before launch. -->
 
 ## 🚀 Quickstart (5 minutes)
 

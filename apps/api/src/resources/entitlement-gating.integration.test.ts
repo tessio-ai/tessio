@@ -3,8 +3,10 @@
 /**
  * End-to-end proof of the edition gate: in the Community edition the Enterprise
  * routes simply do not exist (no ee plugin is loaded), while /me/entitlements
- * reports them disabled with no seat cap. The enterprise-enabled counterparts of
- * these routes are covered in the sso-settings / audit integration tests.
+ * reports them disabled with the free seat allotment. The enterprise-enabled
+ * counterparts of these routes are covered in the sso-settings / audit
+ * integration tests; seat-limit enforcement is covered in
+ * seat-limit.integration.test.ts.
  */
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { buildTestApp, resetDb, seedOrgAndSchema, createTestDb, loginAs } from '../testing/harness';
@@ -42,7 +44,7 @@ describe('community edition gating', () => {
     expect(ssoInfo.statusCode).toBe(404);
   });
 
-  it('/me/entitlements reports community: all enterprise features off, unlimited agents', async () => {
+  it('/me/entitlements reports community: all enterprise features off, free seat allotment', async () => {
     const { orgId } = await seedOrgAndSchema(db, 'ticket');
     const admin = await loginAs(app, db, { orgId, role: 'admin' });
 
@@ -50,7 +52,8 @@ describe('community edition gating', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.edition).toBe('community');
-    expect(body.maxAgents).toBeNull(); // never a seat cap
+    expect(body.seatLimit).toBe(5); // community = the free allotment
+    expect(body.seatsUsed).toBeGreaterThanOrEqual(1); // at least the logged-in admin
     expect(body.features.sso).toBe(false);
     expect(body.features.audit_log).toBe(false);
   });

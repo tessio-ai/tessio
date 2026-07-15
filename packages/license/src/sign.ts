@@ -24,6 +24,11 @@ export interface IssueInput {
   licenseId?: string;
   /** Optional explicit feature subset. */
   features?: Feature[];
+  /**
+   * Total billable seats to grant (including the free allotment). `null` =
+   * unlimited (site license). Omitted = no seat grant (free allotment only).
+   */
+  seats?: number | null;
   /** Lifetime in seconds; `null`/omitted = perpetual (offline tokens only). */
   ttlSeconds?: number | null;
   /** Issued-at, unix seconds (injected for testability). */
@@ -38,6 +43,9 @@ export function signLicense(input: IssueInput, privateKeyB64url: string): string
   if (!EDITIONS.includes(input.edition) || input.edition === 'community') {
     throw new Error(`edition must be a paid edition (${EDITIONS.filter((e) => e !== 'community').join(' | ')})`);
   }
+  if (input.seats !== undefined && input.seats !== null && (!Number.isInteger(input.seats) || input.seats <= 0)) {
+    throw new Error('seats must be a positive integer, or null for unlimited');
+  }
   const payload: LicensePayload = {
     v: 1,
     edition: input.edition,
@@ -46,6 +54,7 @@ export function signLicense(input: IssueInput, privateKeyB64url: string): string
     iat: input.now,
     exp: input.ttlSeconds && Number.isFinite(input.ttlSeconds) ? input.now + Math.round(input.ttlSeconds) : null,
     ...(input.features && input.features.length ? { features: input.features } : {}),
+    ...(input.seats !== undefined ? { seats: input.seats } : {}),
   };
 
   const payloadSeg = encodePayload(payload);

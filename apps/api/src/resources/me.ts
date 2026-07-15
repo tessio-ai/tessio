@@ -12,8 +12,10 @@ import { ApiError } from '../errors';
 const entitlementsResponse = z.object({
   edition: z.enum(['community', 'enterprise', 'cloud']),
   features: z.record(z.boolean()),
-  /** null = unlimited. Tessio never caps seats. */
-  maxAgents: z.number().nullable(),
+  /** Max active billable seats (admins + agents). null = unlimited (site license). */
+  seatLimit: z.number().nullable(),
+  /** Active admins + agents currently occupying seats in this org. */
+  seatsUsed: z.number(),
 });
 
 /** Any authenticated user — per-user notification preferences + entitlements. */
@@ -21,9 +23,11 @@ export function registerMeRoutes(app: FastifyInstance, db: Db): void {
   const r = app.withTypeProvider<ZodTypeProvider>();
   const repo = usersRepo(db);
 
-  // Edition + per-feature entitlements, so the web console can gate enterprise UI.
-  r.get('/me/entitlements', { schema: { response: { 200: entitlementsResponse } } }, async () => {
-    return getEntitlements();
+  // Edition + per-feature entitlements + seat usage, so the web console can
+  // gate enterprise UI and show "X of Y seats used".
+  r.get('/me/entitlements', { schema: { response: { 200: entitlementsResponse } } }, async (req) => {
+    const seatsUsed = await repo.countBillable(req.orgId);
+    return { ...getEntitlements(), seatsUsed };
   });
 
   r.get('/me/notification-prefs', { schema: { response: { 200: notificationPrefsSchema } } }, async (req) => {
