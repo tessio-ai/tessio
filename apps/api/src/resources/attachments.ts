@@ -86,7 +86,9 @@ export function registerAttachmentByIdRoutes(app: FastifyInstance, db: Db, stora
       throw notFound(`attachments ${id} file is missing`);
     }
     reply.header('content-type', row.mime as string);
-    reply.header('content-disposition', `attachment; filename="${(row.filename as string).replace(/["\\]/g, '')}"`);
+    // Strip quotes/backslashes AND CR/LF — a newline in a stored filename must
+    // never become a header-injection vector.
+    reply.header('content-disposition', `attachment; filename="${(row.filename as string).replace(/["\\\r\n]/g, '')}"`);
     return reply.send(buf);
   });
 

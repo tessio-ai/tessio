@@ -67,6 +67,9 @@ services:
       PORT: '3000'
       HOST: 0.0.0.0
       TESSIO_STORAGE_DIR: /data/storage
+      # Public URL of this workspace — used in links the API generates (e.g.
+      # password-reset emails). The worker gets the same value for its emails.
+      TESSIO_SITE_URL: ${TESSIO_SITE_URL:-http://localhost}
       # Edition + license (paid editions only; community needs none of these).
       # The license cache lands under TESSIO_STORAGE_DIR, which is a volume, so
       # the offline-grace token survives container restarts.

@@ -5,7 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { Db } from '@tessio/db';
-import { usersRepo, hashPassword } from '@tessio/db';
+import { usersRepo, sessionsRepo, hashPassword } from '@tessio/db';
 import { isBillableRole } from '@tessio/entitlements';
 import { notFound, conflict, ApiError } from '../errors';
 import { recordAudit, safeMeta } from '../audit';
@@ -121,6 +121,25 @@ export function registerUserRoutes(app: FastifyInstance, db: Db): void {
     }
     return { created, skipped };
   });
+
+  // Admin-initiated reset: generates a fresh password, shown to the admin once
+  // (mirrors the import flow). Works even when the org has no SMTP configured —
+  // the self-serve emailed flow lives at /auth/forgot-password.
+  r.post(
+    '/users/:id/reset-password',
+    { schema: { params: z.object({ id: z.string().uuid() }), response: { 200: z.object({ password: z.string() }) } } },
+    async (req) => {
+      const { id } = req.params;
+      const row = await usersRepo(db).findById(id);
+      if (!row || row.orgId !== req.orgId) throw notFound(`users ${id} not found`);
+      const password = generatePassword();
+      await usersRepo(db).setPasswordHash(id, await hashPassword(password));
+      // The old credential may be compromised — revoke every session it opened.
+      await sessionsRepo(db).deleteAllForUser(id);
+      void recordAudit(db, { orgId: req.orgId, actorId: req.user.id, actorEmail: req.user.email, action: 'user.password_reset_by_admin', targetType: 'user', targetId: id, ip: req.ip });
+      return { password };
+    },
+  );
 
   r.patch('/users/:id', { schema: { params: z.object({ id: z.string().uuid() }), body: updateBody, response: { 200: userOut } } }, async (req) => {
     const { id } = req.params;

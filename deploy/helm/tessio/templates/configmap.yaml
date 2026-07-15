@@ -11,6 +11,7 @@ data:
   TESSIO_LICENSE_SERVER_URL: {{ .Values.license.serverUrl | quote }}
   {{- end }}
   TESSIO_SITE_ADDRESS: {{ .Values.config.siteAddress | quote }}
+  TESSIO_SITE_URL: {{ .Values.config.siteUrl | quote }}
   TESSIO_STORAGE_DIR: "/data/storage"
   REDIS_URL: {{ include "tessio.redisUrl" . | quote }}
   RUNNER_URL: "http://{{ include "tessio.fullname" . }}-runner:3100"

@@ -12,6 +12,7 @@ import { registerAuthContext } from './auth/context';
 import { registerOpenApi } from './openapi';
 import { registerV1Routes } from './routes';
 import { registerAuthRoutes } from './auth/routes';
+import { registerPasswordResetRoutes } from './auth/password-reset';
 import { registerLoginBrandingRoute } from './resources/login-settings';
 import { setSessionCookie } from './auth/cookies';
 import { recordAudit, safeMeta } from './audit';
@@ -44,6 +45,17 @@ export function buildApp(opts: BuildAppOptions): FastifyInstance {
 
   app.get('/health', async () => ({ status: 'ok' }));
 
+  // Defense-in-depth security headers on every API response. Caddy (the normal
+  // front door) already sets the full set including HSTS; these hold even if
+  // the api port is ever exposed directly. The CSP is safe because this server
+  // returns JSON and raw file downloads, never HTML it wants scriptable.
+  app.addHook('onSend', async (_req, reply) => {
+    reply.header('x-content-type-options', 'nosniff');
+    reply.header('x-frame-options', 'DENY');
+    reply.header('referrer-policy', 'strict-origin-when-cross-origin');
+    reply.header('content-security-policy', "default-src 'none'; frame-ancestors 'none'");
+  });
+
   app.decorate('db', opts.db);
   registerErrorHandler(app);
 
@@ -67,6 +79,7 @@ export function buildApp(opts: BuildAppOptions): FastifyInstance {
     async (v1) => {
       await registerOpenApi(v1);
       registerAuthRoutes(v1, opts.db);
+      registerPasswordResetRoutes(v1, opts.db, workflowProducers);
       // Sign-in screen branding — public, read-only (see resources/login-settings.ts).
       registerLoginBrandingRoute(v1, opts.db);
       // Enterprise public (pre-session) routes, e.g. SSO start/callback/info.

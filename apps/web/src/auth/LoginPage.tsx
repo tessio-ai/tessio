@@ -161,6 +161,14 @@ export function LoginPage({ onLogin }: { onLogin: (email: string, password: stri
           </button>
         </form>
 
+        <button
+          type="button"
+          className="login-link"
+          onClick={() => { window.location.hash = '#/forgot-password'; }}
+        >
+          Forgot password?
+        </button>
+
         {ssoEnabled && (
           <>
             <div className="login-divider">

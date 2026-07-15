@@ -16,3 +16,12 @@ export function logout(): Promise<void> {
 export function me(): Promise<AuthUser> {
   return request<AuthUser>('/auth/me');
 }
+
+/** Always resolves (204 whether or not the email has an account). */
+export function forgotPassword(email: string): Promise<void> {
+  return request<void>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+}
+
+export function resetPassword(token: string, password: string): Promise<void> {
+  return request<void>('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) });
+}

@@ -18,12 +18,15 @@ export { resetDb, seedOrgAndSchema, createTestDb } from '@tessio/db/testing';
 export function stubWorkflowProducers(): WorkflowProducers & {
   publishedEvents: { orgId: string; eventType: string; recordId: string }[];
   enqueuedRuns: { orgId: string; runId: string }[];
+  sentEmails: { orgId: string; to: string; subject: string; text: string; html: string }[];
 } {
   const publishedEvents: { orgId: string; eventType: string; recordId: string }[] = [];
   const enqueuedRuns: { orgId: string; runId: string }[] = [];
+  const sentEmails: { orgId: string; to: string; subject: string; text: string; html: string }[] = [];
   return {
     publishedEvents,
     enqueuedRuns,
+    sentEmails,
     async publishEvent(_db, orgId, event) {
       publishedEvents.push({ orgId, eventType: event.eventType, recordId: event.recordId });
     },
@@ -31,6 +34,9 @@ export function stubWorkflowProducers(): WorkflowProducers & {
       enqueuedRuns.push({ orgId, runId });
     },
     async publishNotification() {},
+    async enqueueEmail(job) {
+      sentEmails.push({ orgId: job.orgId, to: job.to, subject: job.subject, text: job.text, html: job.html });
+    },
   };
 }
 

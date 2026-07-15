@@ -8,9 +8,11 @@ import {
   WORKFLOW_EVENTS_QUEUE,
   WORKFLOW_RUNS_QUEUE,
   NOTIFICATIONS_QUEUE,
+  EMAIL_SEND_QUEUE,
   type WorkflowEventJobData,
   type WorkflowRunJobData,
   type NotificationEventJob,
+  type EmailSendJob,
 } from '@tessio/shared';
 
 /** Injectable seam: integration tests stub these instead of touching Redis. */
@@ -21,11 +23,14 @@ export interface WorkflowProducers {
   enqueueRun(orgId: string, runId: string): Promise<void>;
   /** Publish a ticket activity event to the notifications queue (no workflow guard). */
   publishNotification(db: Db, orgId: string, event: NotificationEventJob['event']): Promise<void>;
+  /** Enqueue a ready-to-send email (the worker loads the org's SMTP settings). */
+  enqueueEmail(job: EmailSendJob): Promise<void>;
 }
 
 let events: Queue<WorkflowEventJobData> | null = null;
 let runs: Queue<WorkflowRunJobData> | null = null;
 let notifications: Queue<NotificationEventJob> | null = null;
+let emails: Queue<EmailSendJob> | null = null;
 
 function connection() {
   return new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', { maxRetriesPerRequest: null });
@@ -43,6 +48,10 @@ function runsQueue(): Queue<WorkflowRunJobData> {
 function notificationsQueue(): Queue<NotificationEventJob> {
   if (!notifications) notifications = new Queue<NotificationEventJob>(NOTIFICATIONS_QUEUE, { connection: connection() });
   return notifications;
+}
+function emailsQueue(): Queue<EmailSendJob> {
+  if (!emails) emails = new Queue<EmailSendJob>(EMAIL_SEND_QUEUE, { connection: connection() });
+  return emails;
 }
 
 export const realWorkflowProducers: WorkflowProducers = {
@@ -67,6 +76,15 @@ export const realWorkflowProducers: WorkflowProducers = {
     } catch (err) {
       // Notification fan-out is best-effort; a Redis failure must not break ticket writes.
       console.error('failed to publish notification event', err);
+    }
+  },
+
+  async enqueueEmail(job) {
+    try {
+      await emailsQueue().add('send', job, { attempts: 3, backoff: { type: 'exponential', delay: 5000 } });
+    } catch (err) {
+      // Best-effort: a Redis failure must not turn into a 500 on the request path.
+      console.error('failed to enqueue email', err);
     }
   },
 };

@@ -1200,6 +1200,16 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
 }
 .login-sso:hover { background: #f4f8fc; border-color: #cdd9e5; }
 
+/* Tertiary text action on the auth screens ("Forgot password?", "Back to sign in"). */
+.login-link {
+  margin-top: 14px;
+  border: 0; background: none; padding: 0;
+  color: #5b6b7e; font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.login-link:hover { color: #182335; text-decoration: underline; }
+
 @media (max-width: 480px) {
   .login-card { padding: 30px 22px 26px; border-radius: 20px; }
   .login-topbar { top: 18px; left: 18px; }
