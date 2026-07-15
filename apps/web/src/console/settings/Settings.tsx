@@ -9,6 +9,8 @@ import type { Route } from '../shell';
 import { listSchemas } from '../../api/schemas';
 import { listTeamMembers } from '../../api/team-members';
 import type { ImportUserInput, ImportUsersResult } from '../../api/users';
+import { ApiError } from '../../api/types';
+import { FREE_SEAT_LIMIT } from '@tessio/entitlements';
 import {
   useOrg, useUpdateOrg,
   usePortalSettings, useUpdatePortalSettings,
@@ -70,7 +72,7 @@ export function Settings({ go, route }: { go: Go; route: Route }) {
   const section = route.view || 'branding';
   const setSection = (id: string) => go('settings', { view: id });
 
-  // Enterprise features are gated by edition entitlements, never by seats.
+  // Enterprise features are gated by edition entitlements.
   const { data: ent } = useEntitlements();
   const bot = useBot();
   const ssoOn = !!ent?.features.sso;
@@ -392,16 +394,28 @@ function SignInBrandingCard() {
 }
 
 /* ---------- Members ---------- */
+
+/** Human-readable message for a failed member mutation; seat-limit 402s carry a full explanation. */
+function memberErrorText(err: unknown): string {
+  // ApiError's message is already `detail ?? title` (see api/types.ts).
+  return err instanceof ApiError ? err.message : 'Something went wrong — please try again.';
+}
+
 function MembersSettings() {
   const { user: me } = useAuth();
   const { data: users = [] } = useUsers();
   const { data: teams = [] } = useTeams();
+  const { data: ent } = useEntitlements();
   const createUserMut = useCreateUser();
   const updateUserMut = useUpdateUser();
   const [tab, setTab] = useState('all');
   const [q, setQ] = useState('');
   const [inviting, setInviting] = useState(false);
   const [importingUsers, setImportingUsers] = useState(false);
+
+  const seatLimit = ent?.seatLimit;
+  const seatsUsed = ent?.seatsUsed;
+  const atSeatLimit = seatLimit != null && seatsUsed != null && seatsUsed >= seatLimit;
 
   const { data: allTeamMembers = [] } = useQuery({
     queryKey: ['all-team-members'],
@@ -424,12 +438,30 @@ function MembersSettings() {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
-        <div><h1 className="set-h">Members</h1><p className="set-h-desc">{agents.length} agents · {requesters.length} requesters</p></div>
+        <div>
+          <h1 className="set-h">Members</h1>
+          <p className="set-h-desc">
+            {agents.length} agents · {requesters.length} requesters
+            {seatLimit != null && seatsUsed != null && <> · {seatsUsed} of {seatLimit} seats used</>}
+          </p>
+        </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button variant="outline" icon="inbox" onClick={() => setImportingUsers(true)}>Import</Button>
           <Button variant="primary" icon="userPlus" onClick={() => setInviting(true)}>Invite member</Button>
         </div>
       </div>
+
+      {atSeatLimit && (
+        <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', background: 'var(--muted-2)', fontSize: 'var(--t-caption)', color: 'var(--muted-foreground)' }}>
+          All {seatLimit} admin/agent seats are in use. Requesters are free and unlimited; to add another admin or agent,
+          add seats to your subscription or disable an existing admin/agent first.
+        </div>
+      )}
+      {updateUserMut.isError && (
+        <div style={{ marginTop: 10, fontSize: 'var(--t-caption)', color: 'var(--danger)' }}>
+          {memberErrorText(updateUserMut.error)}
+        </div>
+      )}
 
       <div className="mem-toolbar">
         <div className="mem-tabs">
@@ -491,9 +523,14 @@ function MembersSettings() {
         })}
       </div>
 
-      {inviting && <InviteDialog teams={teams.map((t) => t.name)} onClose={() => setInviting(false)} onAdd={(body) => {
-        createUserMut.mutate(body, { onSuccess: () => setInviting(false) });
-      }} />}
+      {inviting && <InviteDialog
+        teams={teams.map((t) => t.name)}
+        onClose={() => { createUserMut.reset(); setInviting(false); }}
+        pending={createUserMut.isPending}
+        error={createUserMut.isError ? memberErrorText(createUserMut.error) : null}
+        onAdd={(body) => {
+          createUserMut.mutate(body, { onSuccess: () => setInviting(false) });
+        }} />}
 
       {importingUsers && <ImportUsersDialog onClose={() => setImportingUsers(false)} />}
     </>
@@ -666,10 +703,12 @@ function ImportUsersDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-function InviteDialog({ onClose, onAdd }: {
+function InviteDialog({ onClose, onAdd, pending, error }: {
   teams: string[];
   onClose: () => void;
   onAdd: (b: { name: string; email: string; role: 'admin' | 'agent' | 'requester'; password: string }) => void;
+  pending?: boolean;
+  error?: string | null;
 }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -700,10 +739,11 @@ function InviteDialog({ onClose, onAdd }: {
             </select>
           </div>
           <div style={{ fontSize: 'var(--t-caption)', color: 'var(--muted-foreground)', display: 'flex', gap: 6, alignItems: 'center' }}><Icon name="mail" size={13} />They'll receive credentials to join the workspace.</div>
+          {error && <div style={{ marginTop: 10, fontSize: 'var(--t-caption)', color: 'var(--danger)' }}>{error}</div>}
         </div>
         <div className="dialog-foot">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" icon="userPlus" onClick={submit}>Send invite</Button>
+          <Button variant="primary" icon="userPlus" onClick={submit} disabled={pending}>{pending ? 'Inviting…' : 'Send invite'}</Button>
         </div>
       </div>
     </>
@@ -899,6 +939,8 @@ function BillingSettings() {
   const edition = ent?.edition ?? 'community';
   const isPaid = edition === 'enterprise' || edition === 'cloud';
   const editionLabel = edition === 'cloud' ? 'Cloud' : edition === 'enterprise' ? 'Enterprise' : 'Community';
+  const seatLimit = ent?.seatLimit;
+  const seatsUsed = ent?.seatsUsed;
 
   return (
     <>
@@ -910,14 +952,21 @@ function BillingSettings() {
           <div style={{ fontSize: 'var(--t-h2)', fontWeight: 600, marginBottom: 6 }}>
             {editionLabel} edition
           </div>
+          {seatsUsed != null && (
+            <div style={{ fontSize: 'var(--t-small)', marginBottom: 12 }}>
+              <strong>{seatsUsed}</strong> of <strong>{seatLimit ?? 'unlimited'}</strong> admin/agent seats in use
+              {seatLimit != null && seatsUsed >= seatLimit && <span style={{ color: 'var(--muted-foreground)' }}> — all seats taken</span>}
+            </div>
+          )}
           <div style={{ color: 'var(--muted-foreground)', fontSize: 'var(--t-small)', maxWidth: 460, margin: '0 auto', lineHeight: 1.55 }}>
             Tessio is <strong>open core</strong>. The self-hostable core product is free and open source under the{' '}
             <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noreferrer">GNU AGPL-3.0</a>,
-            with <strong>no seat cap</strong> — unlimited agents in every edition.
+            and is <strong>free for up to {FREE_SEAT_LIMIT} admins and agents</strong>.
+            Requesters are always free and unlimited.
             {isPaid ? (
-              <> Enterprise features (SSO, audit log) are enabled on this instance under a commercial license.</>
+              <> This instance runs under a commercial per-seat license, which also enables enterprise features (SSO, audit log).</>
             ) : (
-              <> Enterprise add-ons (SSO, audit log) are available under a separate commercial license.</>
+              <> Beyond that, a commercial per-seat subscription adds seats month-to-month and enables enterprise add-ons (SSO, audit log).</>
             )}
           </div>
         </div>

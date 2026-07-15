@@ -9,7 +9,7 @@
  *
  *   # mint a long-lived OFFLINE token for an air-gapped customer
  *   TESSIO_LICENSE_PRIVATE_KEY=<b64url> \
- *   tsx src/cli.ts issue --edition enterprise --sub "Acme Corp" --days 365
+ *   tsx src/cli.ts issue --edition enterprise --sub "Acme Corp" --days 365 --seats 25
  *
  * The hosted path does NOT use `issue` — the license server mints short-TTL
  * tokens automatically on check-in. `issue` exists only for air-gapped deals.
@@ -17,7 +17,7 @@
 
 import { generateKeypair } from './keys';
 import { signLicense } from './sign';
-import type { Edition, Feature } from '@tessio/entitlements';
+import { parseSeats, type Edition, type Feature } from '@tessio/entitlements';
 
 function keygen(): void {
   const { publicKey, privateKey } = generateKeypair();
@@ -38,12 +38,17 @@ function parseFlags(argv: string[]): Record<string, string> {
 function issue(flags: Record<string, string>, now: number): string {
   const priv = process.env.TESSIO_LICENSE_PRIVATE_KEY;
   if (!priv) throw new Error('set TESSIO_LICENSE_PRIVATE_KEY (from `keygen`) to sign a license');
+  const seats = parseSeats(flags.seats);
+  if (flags.seats !== undefined && seats === undefined) {
+    throw new Error(`--seats must be a positive integer or 'unlimited', got '${flags.seats}'`);
+  }
   return signLicense(
     {
       edition: flags.edition as Edition,
       subject: flags.sub ?? 'unknown',
       licenseId: flags.lid,
       features: flags.features ? (flags.features.split(',').map((f) => f.trim()).filter(Boolean) as Feature[]) : undefined,
+      seats,
       ttlSeconds: flags.days ? Number(flags.days) * 86400 : null,
       now,
     },
@@ -58,7 +63,7 @@ function main(): void {
     process.stdout.write(`${issue(parseFlags(rest), Math.floor(Date.now() / 1000))}\n`);
     return;
   }
-  process.stderr.write('usage: cli.ts <keygen | issue --edition <e> --sub <name> [--lid id] [--days n] [--features a,b]>\n');
+  process.stderr.write('usage: cli.ts <keygen | issue --edition <e> --sub <name> [--lid id] [--days n] [--features a,b] [--seats <n|unlimited>]>\n');
   process.exit(1);
 }
 

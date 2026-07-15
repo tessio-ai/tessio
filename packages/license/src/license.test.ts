@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { publicKeyFromRaw, generateKeypair } from './keys';
 import { signLicense } from './sign';
 import { verifyLicenseKey } from './verify';
-import { resolveEffectiveEdition } from './resolve';
+import { resolveEffectiveEdition, applyResolvedEdition } from './resolve';
 import { createLicenseClient } from './checkin';
 import { isSignedToken } from './format';
 
@@ -56,6 +56,34 @@ describe('sign → verify round trip', () => {
     const res = verifyLicenseKey(token, { now: NOW, publicKey: iss.publicKey });
     if (res.ok) expect(res.claims.features).toEqual(['sso']);
   });
+
+  it('carries a seat grant through (count, unlimited, and absent)', () => {
+    const iss = issuer();
+    const counted = verifyLicenseKey(signLicense({ edition: 'enterprise', subject: 'x', seats: 25, ttlSeconds: 86400, now: NOW }, iss.privateKey), { now: NOW, publicKey: iss.publicKey });
+    if (counted.ok) expect(counted.claims.seats).toBe(25);
+
+    const unlimited = verifyLicenseKey(signLicense({ edition: 'enterprise', subject: 'x', seats: null, ttlSeconds: 86400, now: NOW }, iss.privateKey), { now: NOW, publicKey: iss.publicKey });
+    if (unlimited.ok) expect(unlimited.claims.seats).toBeNull();
+
+    const absent = verifyLicenseKey(signLicense({ edition: 'enterprise', subject: 'x', ttlSeconds: 86400, now: NOW }, iss.privateKey), { now: NOW, publicKey: iss.publicKey });
+    if (absent.ok) expect(absent.claims.seats).toBeUndefined();
+  });
+
+  it('refuses to sign a non-positive or fractional seat count', () => {
+    const iss = issuer();
+    expect(() => signLicense({ edition: 'enterprise', subject: 'x', seats: 0, now: NOW }, iss.privateKey)).toThrow();
+    expect(() => signLicense({ edition: 'enterprise', subject: 'x', seats: 2.5, now: NOW }, iss.privateKey)).toThrow();
+  });
+
+  it('refuses a zero/negative TTL instead of silently minting a perpetual token', () => {
+    const iss = issuer();
+    expect(() => signLicense({ edition: 'enterprise', subject: 'x', ttlSeconds: 0, now: NOW }, iss.privateKey)).toThrow(/ttlSeconds/);
+    expect(() => signLicense({ edition: 'enterprise', subject: 'x', ttlSeconds: -5, now: NOW }, iss.privateKey)).toThrow(/ttlSeconds/);
+    // null stays the explicit opt-in for perpetual (offline/air-gap tokens)
+    const perpetual = signLicense({ edition: 'enterprise', subject: 'x', ttlSeconds: null, now: NOW }, iss.privateKey);
+    const res = verifyLicenseKey(perpetual, { now: NOW + 10 * 365 * 86400, publicKey: iss.publicKey });
+    expect(res.ok).toBe(true);
+  });
 });
 
 describe('resolveEffectiveEdition (fail-closed)', () => {
@@ -79,6 +107,32 @@ describe('resolveEffectiveEdition (fail-closed)', () => {
     const r = resolveEffectiveEdition({ requestedEdition: 'enterprise', signedToken: token, now: NOW, publicKey: iss.publicKey });
     expect(r).toMatchObject({ edition: 'enterprise', downgraded: false });
     expect(r.license?.subject).toBe('Acme');
+  });
+
+  it('applyResolvedEdition writes the verified seat grant and clears hand-set values', () => {
+    const iss = issuer();
+    const env: NodeJS.ProcessEnv = { TESSIO_LICENSED_SEATS: '9999' }; // attacker-set, must not survive
+
+    // Community (no token): the fake grant is wiped, edition collapses.
+    applyResolvedEdition({ requestedEdition: 'enterprise', signedToken: undefined, now: NOW, publicKey: iss.publicKey }, env);
+    expect(env.TESSIO_EDITION).toBe('community');
+    expect(env.TESSIO_LICENSED_SEATS).toBeUndefined();
+
+    // A verified 25-seat token writes 25.
+    const seatToken = signLicense({ edition: 'enterprise', subject: 'Acme', seats: 25, ttlSeconds: 86400, now: NOW }, iss.privateKey);
+    applyResolvedEdition({ requestedEdition: 'enterprise', signedToken: seatToken, now: NOW, publicKey: iss.publicKey }, env);
+    expect(env.TESSIO_EDITION).toBe('enterprise');
+    expect(env.TESSIO_LICENSED_SEATS).toBe('25');
+
+    // A verified unlimited token writes 'unlimited'.
+    const siteToken = signLicense({ edition: 'enterprise', subject: 'Acme', seats: null, ttlSeconds: 86400, now: NOW }, iss.privateKey);
+    applyResolvedEdition({ requestedEdition: 'enterprise', signedToken: siteToken, now: NOW, publicKey: iss.publicKey }, env);
+    expect(env.TESSIO_LICENSED_SEATS).toBe('unlimited');
+
+    // A seat-less paid token clears the grant (free allotment only).
+    const noSeats = signLicense({ edition: 'enterprise', subject: 'Acme', ttlSeconds: 86400, now: NOW }, iss.privateKey);
+    applyResolvedEdition({ requestedEdition: 'enterprise', signedToken: noSeats, now: NOW, publicKey: iss.publicKey }, env);
+    expect(env.TESSIO_LICENSED_SEATS).toBeUndefined();
   });
 });
 

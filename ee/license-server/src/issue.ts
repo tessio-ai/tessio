@@ -29,6 +29,7 @@ export function issueEntitlement(
       subject: sub.subject,
       licenseId: sub.licenseId,
       features: sub.features,
+      seats: sub.seats,
       ttlSeconds: opts.ttlSeconds,
       now: opts.now,
     },

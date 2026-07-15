@@ -27,6 +27,12 @@ export interface LicensePayload {
   edition: Edition;
   /** Optional explicit feature allow-list; when absent the edition's full set applies. */
   features?: Feature[];
+  /**
+   * Billable seats (active admins + agents) the license grants in TOTAL,
+   * including the free allotment. `null` = unlimited (site license). Absent =
+   * no seat grant → the instance stays at the free allotment.
+   */
+  seats?: number | null;
   /** Who the license is issued to (org/company), for display + support. */
   sub: string;
   /** Opaque license id, for support lookups / the vendor's ledger. */

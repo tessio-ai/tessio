@@ -6,8 +6,10 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { Db } from '@tessio/db';
 import { usersRepo, hashPassword } from '@tessio/db';
-import { notFound, conflict } from '../errors';
+import { isBillableRole } from '@tessio/entitlements';
+import { notFound, conflict, ApiError } from '../errors';
 import { recordAudit, safeMeta } from '../audit';
+import { withSeatGuard } from '../seats';
 
 const roleEnum = z.enum(['admin', 'agent', 'requester']);
 const statusEnum = z.enum(['active', 'disabled']);
@@ -72,13 +74,17 @@ export function registerUserRoutes(app: FastifyInstance, db: Db): void {
   r.post('/users', { schema: { body: createBody, response: { 201: userOut } } }, async (req, reply) => {
     const b = req.body;
     if (await usersRepo(db).findByEmail(req.orgId, b.email)) throw conflict('A user with that email already exists');
-    const created = await usersRepo(db).create({
+    const values = {
       orgId: req.orgId,
       email: b.email,
       name: b.name,
       role: b.role,
       passwordHash: await hashPassword(b.password),
-    });
+    };
+    // A billable create takes its seat atomically under the org's seat guard.
+    const created = isBillableRole(b.role)
+      ? await withSeatGuard(db, req.orgId, (tx) => usersRepo(tx).create(values))
+      : await usersRepo(db).create(values);
     void recordAudit(db, { orgId: req.orgId, actorId: req.user.id, actorEmail: req.user.email, action: 'user.created', targetType: 'user', targetId: created.id, metadata: { role: created.role }, ip: req.ip });
     reply.code(201);
     return safe(created as UserRow);
@@ -94,13 +100,22 @@ export function registerUserRoutes(app: FastifyInstance, db: Db): void {
       seen.add(email);
       if (await usersRepo(db).findByEmail(req.orgId, email)) { skipped.push({ email: u.email, reason: 'already exists' }); continue; }
       const password = generatePassword();
-      const row = await usersRepo(db).create({
-        orgId: req.orgId,
-        email,
-        name: u.name,
-        role: u.role,
-        passwordHash: await hashPassword(password),
-      });
+      const values = { orgId: req.orgId, email, name: u.name, role: u.role, passwordHash: await hashPassword(password) };
+      let row;
+      try {
+        // Billable rows take their seat under the org's seat guard; when the
+        // org is full the guard's 402 becomes this row's skip reason (import
+        // continues — requester rows are always free).
+        row = isBillableRole(u.role)
+          ? await withSeatGuard(db, req.orgId, (tx) => usersRepo(tx).create(values))
+          : await usersRepo(db).create(values);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 402) {
+          skipped.push({ email: u.email, reason: `${err.title.toLowerCase()}: ${err.detail ?? ''}`.trim() });
+          continue;
+        }
+        throw err;
+      }
       void recordAudit(db, { orgId: req.orgId, actorId: req.user.id, actorEmail: req.user.email, action: 'user.created', targetType: 'user', targetId: row.id, metadata: { role: row.role, via: 'import' }, ip: req.ip });
       created.push({ email: row.email, name: row.name, role: row.role, password });
     }
@@ -112,8 +127,17 @@ export function registerUserRoutes(app: FastifyInstance, db: Db): void {
     const b = req.body;
     let row = await usersRepo(db).findById(id);
     if (!row || row.orgId !== req.orgId) throw notFound(`users ${id} not found`);
-    if (b.status) row = await usersRepo(db).setStatus(id, b.status);
-    if (b.role) row = await usersRepo(db).setRole(id, b.role);
+    // A role/status change that turns a non-billable user into an active
+    // admin/agent occupies a new seat — same atomic guard as creating one.
+    const wasBillable = row.status === 'active' && isBillableRole(row.role);
+    const becomesBillable = (b.status ?? row.status) === 'active' && isBillableRole(b.role ?? row.role);
+    const apply = async (tx: typeof db) => {
+      let updated = row!;
+      if (b.status) updated = await usersRepo(tx).setStatus(id, b.status);
+      if (b.role) updated = await usersRepo(tx).setRole(id, b.role);
+      return updated;
+    };
+    row = !wasBillable && becomesBillable ? await withSeatGuard(db, req.orgId, apply) : await apply(db);
     void recordAudit(db, { orgId: req.orgId, actorId: req.user.id, actorEmail: req.user.email, action: 'user.updated', targetType: 'user', targetId: id, metadata: safeMeta(req.body as Record<string, unknown>, ['role', 'status']), ip: req.ip });
     return safe(row as UserRow);
   });

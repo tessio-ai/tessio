@@ -6,6 +6,10 @@ metadata:
 data:
   HOST: "0.0.0.0"
   NODE_ENV: "production"
+  TESSIO_EDITION: {{ .Values.license.edition | default "community" | quote }}
+  {{- if .Values.license.serverUrl }}
+  TESSIO_LICENSE_SERVER_URL: {{ .Values.license.serverUrl | quote }}
+  {{- end }}
   TESSIO_SITE_ADDRESS: {{ .Values.config.siteAddress | quote }}
   TESSIO_STORAGE_DIR: "/data/storage"
   REDIS_URL: {{ include "tessio.redisUrl" . | quote }}

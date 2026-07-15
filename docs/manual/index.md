@@ -1,9 +1,11 @@
 # Tessio self-hosting
 
-Tessio is a **self-hosted ITSM platform** (proprietary; free to self-host under the [Elastic License 2.0](https://www.elastic.co/licensing/elastic-license)) — ticketing,
+Tessio is a **self-hosted ITSM platform** (open core; the core is free to self-host under the
+[GNU AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html)) — ticketing,
 asset/inventory (CMDB), knowledge base, custom forms, dashboards, and workflow
-automation. Every feature is free; there is no paid tier or feature gating. The project
-is sustained by optional managed hosting and support.
+automation. The full core product is **free for up to 5 admins/agents** (requesters — your
+end users — are always free and unlimited); beyond that, seats are billed per user per
+month, which also unlocks the enterprise features (SSO, audit log).
 
 These docs cover running and operating Tessio on your own infrastructure.
 

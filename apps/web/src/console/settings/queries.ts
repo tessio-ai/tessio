@@ -49,21 +49,30 @@ export function useCreateUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { email: string; name: string; role: UserRow['role']; password: string }) => createUser(body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['users'] });
+      void qc.invalidateQueries({ queryKey: ['entitlements'] }); // seat usage changed
+    },
   });
 }
 export function useImportUsers() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (users: ImportUserInput[]) => importUsers(users),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['users'] });
+      void qc.invalidateQueries({ queryKey: ['entitlements'] }); // seat usage changed
+    },
   });
 }
 export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...patch }: { id: string; role?: UserRow['role']; status?: UserRow['status'] }) => updateUser(id, patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['users'] });
+      void qc.invalidateQueries({ queryKey: ['entitlements'] }); // seat usage changed
+    },
   });
 }
 

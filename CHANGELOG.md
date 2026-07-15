@@ -8,6 +8,16 @@ All notable changes to Tessio are documented here. The format is based on
 
 ### Changed
 
+- **New pricing model: free for 5 admin/agent seats, then per-user/month.** Every edition
+  (including Community) now includes 5 free billable seats — active users with the `admin` or
+  `agent` role. Requesters remain free and unlimited. A paid per-seat license (verified via the
+  signed license key) raises the limit to the purchased seat count; the Stripe subscription
+  quantity is the seat total. The API returns `402 Payment Required`
+  (`code: seat_limit_reached`) when creating, importing, promoting, or re-activating an
+  admin/agent would exceed the limit, and `GET /api/v1/me/entitlements` now reports
+  `seatLimit`/`seatsUsed` (replacing the always-null `maxAgents`). This replaces the previous
+  "unlimited agents in every edition" policy.
+
 - **Relicensed the open core to AGPL-3.0-only** (previously Elastic License 2.0). The `ee/`
   directory is now under a separate commercial license. See `LICENSING.md`.
 

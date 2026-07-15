@@ -114,4 +114,54 @@ describe('stripe helpers (unit)', () => {
     expect(subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', metadata: {} } } })).toBeNull();
     expect(subscriptionFromEvent({ type: 'invoice.paid' })).toBeNull();
   });
+
+  it('subscriptionFromEvent takes the seat total from the item quantity', () => {
+    const meta = { tessio_license_token: 'tok_q', tessio_edition: 'enterprise' };
+    const viaQuantity = subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', quantity: 12, metadata: meta } } });
+    expect(viaQuantity?.subscription.seats).toBe(12);
+    const viaItems = subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', items: { data: [{ quantity: 8 }] }, metadata: meta } } });
+    expect(viaItems?.subscription.seats).toBe(8);
+  });
+
+  it('subscriptionFromEvent never guesses seats from a multi-item subscription', () => {
+    // Two items (e.g. a support add-on listed first): item order is arbitrary,
+    // so no seat grant is inferred — tessio_seats metadata must be explicit.
+    const meta = { tessio_license_token: 'tok_multi', tessio_edition: 'enterprise' };
+    const multi = subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', items: { data: [{ quantity: 1 }, { quantity: 50 }] }, metadata: meta } } });
+    expect(multi?.subscription.seats).toBeUndefined();
+    const withMeta = subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', items: { data: [{ quantity: 1 }, { quantity: 50 }] }, metadata: { ...meta, tessio_seats: '50' } } } });
+    expect(withMeta?.subscription.seats).toBe(50);
+  });
+
+  it('subscriptionFromEvent lets tessio_seats metadata override quantity, incl. unlimited', () => {
+    const base = { tessio_license_token: 'tok_m', tessio_edition: 'enterprise' };
+    const overridden = subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', quantity: 12, metadata: { ...base, tessio_seats: '40' } } } });
+    expect(overridden?.subscription.seats).toBe(40);
+    const unlimited = subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', metadata: { ...base, tessio_seats: 'unlimited' } } } });
+    expect(unlimited?.subscription.seats).toBeNull();
+    // garbage never becomes unlimited — it collapses to "no grant"
+    const garbage = subscriptionFromEvent({ type: 'customer.subscription.updated', data: { object: { status: 'active', metadata: { ...base, tessio_seats: 'lots' } } } });
+    expect(garbage?.subscription.seats).toBeUndefined();
+  });
+});
+
+describe('seats end-to-end: webhook → check-in → signed entitlement', () => {
+  const secret = 'whsec_test';
+
+  it('a 12-seat subscription yields a token whose verified claims carry 12 seats', async () => {
+    const { app } = server({}, secret);
+    const event = {
+      type: 'customer.subscription.created',
+      data: { object: { status: 'active', quantity: 12, metadata: { tessio_license_token: 'tok_seats', tessio_edition: 'enterprise', tessio_subject: 'Seaty Co' } } },
+    };
+    const raw = JSON.stringify(event);
+    const sig = createHmac('sha256', secret).update(`${NOW}.${raw}`).digest('hex');
+    await app.inject({ method: 'POST', url: '/stripe/webhook', payload: raw, headers: { 'content-type': 'application/json', 'stripe-signature': `t=${NOW},v1=${sig}` } });
+
+    const checkin = await app.inject({ method: 'POST', url: '/license/check-in', payload: { token: 'tok_seats' } });
+    expect(checkin.statusCode).toBe(200);
+    const v = verifyLicenseKey(checkin.json().token, { now: NOW, publicKey: pub });
+    expect(v.ok).toBe(true);
+    if (v.ok) expect(v.claims.seats).toBe(12);
+  });
 });

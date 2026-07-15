@@ -227,7 +227,7 @@ export function LandingPage() {
             <a className="btn btn-line btn-lg" href={GITHUB_URL} target="_blank" rel="noreferrer">View on GitHub</a>
           </div>
           <div className="landing-hero-micro landing-reveal in d3">
-            Free to self-host · Elastic License 2.0 · Live in ~5 minutes
+            Free for 5 agents · Open source (AGPL-3.0) · Live in ~5 minutes
           </div>
 
           {/* BENTO GRID */}
@@ -543,7 +543,7 @@ export function LandingPage() {
               {Array.from({ length: 16 }, (_, i) => <i key={i} />)}
             </div>
             <h2>Give your desk<br />an AI teammate.</h2>
-            <p>Deploy the community edition with Docker Compose in about five minutes. Free to self-host, entirely on your servers.</p>
+            <p>Deploy the community edition with Docker Compose in about five minutes. Free for up to 5 agents, entirely on your servers.</p>
             <div className="landing-hero-cta">
               <a className="btn btn-white btn-lg" href={START_URL} target="_blank" rel="noreferrer">Get started — free</a>
               <a className="btn btn-glass btn-lg" href={GITHUB_URL} target="_blank" rel="noreferrer">View on GitHub</a>

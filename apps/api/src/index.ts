@@ -28,9 +28,15 @@ async function main() {
     checkInUrl: process.env.TESSIO_LICENSE_SERVER_URL,
     cachePath: process.env.TESSIO_LICENSE_CACHE_PATH ?? `${storageDir}/license.json`,
   });
+  // Capture the operator's REQUESTED edition once, before applyResolvedEdition
+  // overwrites TESSIO_EDITION with the resolved value. The daily refresh must
+  // resolve against this original request, not the overwritten env var —
+  // otherwise a fail-closed boot (license server briefly down, no cache) would
+  // pin the process to community forever, ignoring later valid tokens.
+  const requestedEdition = process.env.TESSIO_EDITION;
   const resolvedToken = await license.resolveInitial();
   const resolved = applyResolvedEdition({
-    requestedEdition: process.env.TESSIO_EDITION,
+    requestedEdition,
     signedToken: resolvedToken.signedToken,
     now: now(),
   });
@@ -41,7 +47,7 @@ async function main() {
   }
   // Re-check daily so renewals/lapses take effect without a restart or a new key.
   license.startDailyRefresh((token) => {
-    const next = applyResolvedEdition({ requestedEdition: process.env.TESSIO_EDITION, signedToken: token, now: now() });
+    const next = applyResolvedEdition({ requestedEdition, signedToken: token, now: now() });
     console.log(`[license] refreshed: running ${next.edition} edition.`);
   });
 

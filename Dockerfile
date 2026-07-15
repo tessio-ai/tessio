@@ -16,6 +16,10 @@ COPY packages/forms/package.json ./packages/forms/
 # @tessio/license is bundled into apps/api by tsup, which must resolve its
 # workspace dep (@tessio/entitlements) from within it — so it has to be installed.
 COPY packages/license/package.json ./packages/license/
+# @tessio/entitlements depends on @tessio/shared (billable-role list); without
+# its manifest here pnpm never links that dep and every app build fails to
+# resolve "@tessio/shared" from within entitlements.
+COPY packages/entitlements/package.json ./packages/entitlements/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/ui/package.json ./packages/ui/
 RUN pnpm install --frozen-lockfile

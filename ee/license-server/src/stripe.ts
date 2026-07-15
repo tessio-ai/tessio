@@ -11,14 +11,23 @@
  *      record. The customer's stable license token and the edition travel in the
  *      subscription's `metadata` (set when you create the Checkout Session):
  *        metadata.tessio_license_token, metadata.tessio_edition,
- *        metadata.tessio_features (comma-separated, optional), metadata.tessio_subject
+ *        metadata.tessio_features (comma-separated, optional), metadata.tessio_subject,
+ *        metadata.tessio_seats ('unlimited' or a number, optional — overrides quantity)
+ *
+ * Per-seat pricing: the subscription's item QUANTITY is the customer's TOTAL
+ * seat count (active admins + agents). Model the "first N free, then $X/user/mo"
+ * tier in the Stripe Price itself (graduated tiers: the free allotment at $0,
+ * every further unit at the per-user price) so the monthly price is set in the
+ * Stripe dashboard, never in code. Quantity changes flow through
+ * `customer.subscription.updated` events, so an upgrade/downgrade lands in the
+ * signed entitlement on the customer's next daily check-in.
  *
  * Wire these into whatever creates subscriptions (a Checkout Session with those
  * metadata keys); nothing else here needs to change.
  */
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { EDITIONS, type Edition, type Feature, FEATURE_KEYS } from '@tessio/entitlements';
+import { EDITIONS, parseSeats, type Edition, type Feature, FEATURE_KEYS } from '@tessio/entitlements';
 import type { Subscription } from './store';
 
 /** Verify a Stripe webhook signature. Returns true iff the payload is authentic. */
@@ -58,6 +67,9 @@ const ACTIVE_STATUSES = new Set(['active', 'trialing', 'past_due']);
 interface StripeSubscriptionObject {
   status?: string;
   metadata?: Record<string, string>;
+  /** Set on single-item subscriptions; per-seat plans put the seat total here. */
+  quantity?: number;
+  items?: { data?: Array<{ quantity?: number }> };
 }
 interface StripeEvent {
   type?: string;
@@ -86,6 +98,23 @@ export function subscriptionFromEvent(event: unknown): { token: string; subscrip
 
   return {
     token,
-    subscription: { active, edition, features, subject: meta.tessio_subject ?? 'unknown', licenseId: token },
+    subscription: { active, edition, features, seats: seatsFromSubscription(obj), subject: meta.tessio_subject ?? 'unknown', licenseId: token },
   };
+}
+
+/**
+ * The seat total a subscription pays for: `metadata.tessio_seats` when present
+ * ('unlimited' → null, i.e. a site license — parsed by the shared seats
+ * grammar), otherwise the item quantity. The item fallback applies ONLY to
+ * single-item subscriptions: with multiple items Stripe's ordering is
+ * arbitrary, so guessing an item could grant a support add-on's quantity as
+ * seats — multi-item subscriptions must set tessio_seats explicitly.
+ * Anything unparseable yields undefined (free allotment only) — never unlimited.
+ */
+function seatsFromSubscription(obj: StripeSubscriptionObject | undefined): number | null | undefined {
+  const meta = obj?.metadata ?? {};
+  if (meta.tessio_seats !== undefined) return parseSeats(meta.tessio_seats);
+  const items = obj?.items?.data;
+  const qty = obj?.quantity ?? (items && items.length === 1 ? items[0].quantity : undefined);
+  return typeof qty === 'number' && Number.isInteger(qty) && qty > 0 ? qty : undefined;
 }

@@ -32,6 +32,14 @@ admin:
 config:
   siteAddress: ":80"   # Caddy serves HTTP in-cluster; TLS terminates at the Ingress
 
+# Edition + license (paid editions only; community needs none of these).
+# The license key is stored in the chart-managed Secret; the seat count you
+# purchased travels inside the signed license, not in any of these values.
+license:
+  edition: "community"      # community | enterprise | cloud
+  key: ""                   # TESSIO_LICENSE_KEY from your subscription (or a signed offline token)
+  serverUrl: ""             # e.g. https://license.tessio.ai/license/check-in
+
 # Attachment blob storage (api).
 persistence:
   enabled: true
